@@ -1,0 +1,851 @@
+<!DOCTYPE html>
+<html lang="zh-TW" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>{{BOOK_TITLE}} — 閱讀報告</title>
+<style>
+  /* ===== Design Token: Light ===== */
+  :root,
+  [data-theme="light"] {
+    --color-bg:      #f8f6f1;
+    --color-surface: #ffffff;
+    --color-ink:     #1c1917;
+    --color-body:    #44403c;
+    --color-muted:   #6b6560;
+    --color-rule:    #d6d3d1;
+    --color-accent:  #8d7048;
+    --color-accent-light: #f5f0e8;
+
+    --font-serif:  Baskerville, "Noto Serif TC", Georgia, "Times New Roman", serif;
+    --font-sans:   "Noto Sans TC", "PingFang TC", system-ui, -apple-system, sans-serif;
+
+    --width-content: 660px;
+    --spacing-section: 3.5rem;
+  }
+
+  /* ===== Design Token: Dark ===== */
+  [data-theme="dark"] {
+    --color-bg:      #1a1814;
+    --color-surface: #252220;
+    --color-ink:     #e8e4de;
+    --color-body:    #b8b0a4;
+    --color-muted:   #8a8278;
+    --color-rule:    #3d3830;
+    --color-accent:  #c4a06a;
+    --color-accent-light: #2a2520;
+  }
+
+  /* ===== System preference fallback ===== */
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --color-bg:      #1a1814;
+      --color-surface: #252220;
+      --color-ink:     #e8e4de;
+      --color-body:    #b8b0a4;
+      --color-muted:   #8a8278;
+      --color-rule:    #3d3830;
+      --color-accent:  #c4a06a;
+      --color-accent-light: #2a2520;
+    }
+  }
+
+  /* ===== Reset ===== */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { font-size: 17px; -webkit-font-smoothing: antialiased; }
+
+  body {
+    font-family: var(--font-serif);
+    background: var(--color-bg);
+    color: var(--color-body);
+    line-height: 1.75;
+    min-height: 100vh;
+    transition: background-color 0.3s, color 0.3s;
+  }
+
+  /* ===== Typography ===== */
+  h1, h2, h3 {
+    font-family: var(--font-serif);
+    color: var(--color-ink);
+    font-weight: 600;
+    line-height: 1.35;
+  }
+  h2 {
+    font-size: 1.35rem;
+    letter-spacing: 0.02em;
+    margin-bottom: 1.5rem;
+  }
+  h3 {
+    font-size: 1.1rem;
+    margin-bottom: 0.75rem;
+  }
+  p { margin-bottom: 0.85rem; }
+  p:last-child { margin-bottom: 0; }
+
+  /* ===== Layout ===== */
+  .page {
+    max-width: var(--width-content);
+    margin: 0 auto;
+    padding: 0 1.5rem;
+  }
+
+  /* ===== Skip Link ===== */
+  .skip-link {
+    position: absolute;
+    top: -100%;
+    left: 1rem;
+    z-index: 100;
+    padding: 0.5rem 1rem;
+    background: var(--color-surface);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    font-size: 0.85rem;
+    text-decoration: none;
+    border: 1px solid var(--color-rule);
+  }
+  .skip-link:focus {
+    top: 1rem;
+  }
+
+  /* ===== Header ===== */
+  .header {
+    text-align: center;
+    padding: 4rem 1.5rem 3rem;
+    border-bottom: 1px solid var(--color-rule);
+  }
+  .header__tag {
+    display: inline-block;
+    font-family: var(--font-sans);
+    font-size: 0.75rem;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--color-accent);
+    margin-bottom: 1.5rem;
+  }
+  .header__title {
+    font-size: 2rem;
+    font-weight: 700;
+    letter-spacing: 0.01em;
+    margin-bottom: 0.4rem;
+  }
+  .header__author {
+    font-size: 1rem;
+    color: var(--color-muted);
+    margin-bottom: 1.5rem;
+  }
+  .header__verdict {
+    font-style: italic;
+    font-size: 1.05rem;
+    color: var(--color-body);
+    max-width: 540px;
+    margin: 0 auto;
+    line-height: 1.75;
+  }
+
+  /* ===== Toolbar (theme + depth toggle) ===== */
+  .toolbar {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 1.5rem;
+    padding: 1.25rem 1.5rem;
+    border-bottom: 1px solid var(--color-rule);
+    font-family: var(--font-sans);
+    font-size: 0.8rem;
+  }
+  .toggle-group {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--color-muted);
+  }
+  .toggle-group__label {
+    letter-spacing: 0.04em;
+  }
+  .toggle-pill {
+    position: relative;
+    display: inline-flex;
+    background: var(--color-accent-light);
+    border: 1px solid var(--color-rule);
+    padding: 2px;
+    gap: 0;
+  }
+  .toggle-pill button {
+    font-family: var(--font-sans);
+    font-size: 0.78rem;
+    font-weight: 500;
+    padding: 0.3rem 0.75rem;
+    border: none;
+    background: transparent;
+    color: var(--color-muted);
+    cursor: pointer;
+    transition: color 0.2s, background-color 0.2s;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+  }
+  .toggle-pill button[aria-pressed="true"] {
+    background: var(--color-surface);
+    color: var(--color-ink);
+  }
+  .toggle-pill button:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 1px;
+  }
+  .theme-btn {
+    font-family: var(--font-sans);
+    font-size: 0.85rem;
+    background: none;
+    border: 1px solid var(--color-rule);
+    padding: 0.3rem 0.6rem;
+    cursor: pointer;
+    color: var(--color-muted);
+    transition: color 0.2s, border-color 0.2s;
+    line-height: 1;
+  }
+  .theme-btn:hover {
+    color: var(--color-ink);
+    border-color: var(--color-accent);
+  }
+  .theme-btn:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+  }
+
+  /* ===== Section ===== */
+  .section {
+    padding: var(--spacing-section) 0;
+    border-bottom: 1px solid var(--color-rule);
+  }
+  .section:last-of-type {
+    border-bottom: none;
+  }
+  .section__label {
+    font-family: var(--font-sans);
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--color-accent);
+    margin-bottom: 0.6rem;
+  }
+
+  /* ===== Depth visibility ===== */
+  [data-depth="deep"] {
+    display: none;
+  }
+  [data-view="deep"] [data-depth="deep"] {
+    display: block;
+  }
+  /* Tab panels need special handling */
+  [data-view="deep"] .tab-panel[data-depth="deep"][aria-hidden="false"] {
+    display: block;
+  }
+
+  /* ===== Tabs ===== */
+  .tabs {
+    margin-top: 2rem;
+  }
+  .tab-nav {
+    display: flex;
+    gap: 2rem;
+    border-bottom: 1px solid var(--color-rule);
+    list-style: none;
+    margin-bottom: 2rem;
+  }
+  .tab-nav li[data-depth="deep"] {
+    display: none;
+  }
+  [data-view="deep"] .tab-nav li[data-depth="deep"] {
+    display: block;
+  }
+  .tab-nav [role="tab"] {
+    font-family: var(--font-sans);
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--color-muted);
+    background: none;
+    border: none;
+    padding: 0.6rem 0;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+    transition: color 0.2s, border-color 0.2s;
+    letter-spacing: 0.02em;
+  }
+  .tab-nav [role="tab"]:hover {
+    color: var(--color-ink);
+  }
+  .tab-nav [role="tab"][aria-selected="true"] {
+    color: var(--color-ink);
+    border-bottom-color: var(--color-accent);
+  }
+  .tab-nav [role="tab"]:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
+  .tab-panel {
+    display: none;
+  }
+  .tab-panel[aria-hidden="false"] {
+    display: block;
+    animation: fadeIn 0.35s ease;
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+  }
+
+  /* ===== Arguments (native details/summary) ===== */
+  .argument {
+    border-bottom: 1px solid var(--color-rule);
+    padding: 1.25rem 0;
+  }
+  .argument:last-child { border-bottom: none; }
+  .argument > summary {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    list-style: none;
+    cursor: pointer;
+    font-family: var(--font-serif);
+    font-size: 1.05rem;
+    font-weight: 600;
+    color: var(--color-ink);
+    line-height: 1.5;
+  }
+  .argument > summary::-webkit-details-marker { display: none; }
+  .argument > summary::marker { display: none; content: ""; }
+  .argument > summary:hover { color: var(--color-accent); }
+  .argument > summary:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 4px;
+    border-radius: 2px;
+  }
+  .argument__arrow {
+    font-size: 0.65rem;
+    color: var(--color-muted);
+    transition: transform 0.25s ease;
+    flex-shrink: 0;
+    margin-left: 1rem;
+  }
+  .argument[open] .argument__arrow {
+    transform: rotate(90deg);
+  }
+  .argument__body {
+    padding-top: 1rem;
+  }
+
+  /* ===== Concept list ===== */
+  .concept-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1.75rem;
+  }
+  .concept {
+    padding-bottom: 1.75rem;
+    border-bottom: 1px solid var(--color-rule);
+  }
+  .concept:last-child { border-bottom: none; padding-bottom: 0; }
+  .concept__name {
+    font-size: 1.05rem;
+    font-weight: 600;
+    color: var(--color-ink);
+    margin-bottom: 0.4rem;
+  }
+  .concept__def {
+    font-size: 0.92rem;
+    color: var(--color-body);
+  }
+
+  /* ===== Concept relations ===== */
+  .relations {
+    margin-top: 2.5rem;
+    padding: 1.5rem;
+    background: var(--color-accent-light);
+  }
+  .relations__title {
+    font-family: var(--font-sans);
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--color-accent);
+    margin-bottom: 1rem;
+  }
+  .relations svg { max-width: 100%; height: auto; }
+
+  /* ===== Critical prose ===== */
+  .prose { line-height: 2; }
+  .prose h3 { margin-top: 1.75rem; margin-bottom: 0.6rem; }
+  .prose ul, .prose ol { padding-left: 1.25rem; margin-bottom: 1rem; }
+  .prose li { margin-bottom: 0.35rem; }
+
+  /* ===== Quotes ===== */
+  .quote {
+    padding: 1.5rem 0 1.5rem 1.75rem;
+    border-left: 2px solid var(--color-accent);
+    margin-bottom: 2rem;
+  }
+  .quote:last-child { margin-bottom: 0; }
+  .quote__text {
+    font-family: var(--font-serif);
+    font-size: 1.1rem;
+    font-style: italic;
+    line-height: 1.85;
+    color: var(--color-ink);
+    margin-bottom: 0.6rem;
+  }
+  .quote__source {
+    font-family: var(--font-sans);
+    font-size: 0.8rem;
+    color: var(--color-muted);
+    font-style: normal;
+  }
+
+  /* ===== Actions ===== */
+  .action-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1.75rem;
+    counter-reset: action;
+  }
+  .action-item {
+    display: flex;
+    gap: 1.25rem;
+    align-items: flex-start;
+    padding-bottom: 1.75rem;
+    border-bottom: 1px solid var(--color-rule);
+    counter-increment: action;
+  }
+  .action-item:last-child { border-bottom: none; padding-bottom: 0; }
+  .action-item::before {
+    content: counter(action);
+    font-family: var(--font-serif);
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--color-accent);
+    line-height: 1;
+    flex-shrink: 0;
+    min-width: 1.5rem;
+    padding-top: 0.15rem;
+  }
+  .action-item__content h4 {
+    font-family: var(--font-serif);
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--color-ink);
+    margin-bottom: 0.25rem;
+    line-height: 1.4;
+  }
+  .action-item__content p {
+    font-size: 0.92rem;
+    margin-bottom: 0;
+  }
+  .action-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem 1.25rem;
+    margin-top: 0.5rem;
+    font-family: var(--font-sans);
+    font-size: 0.78rem;
+    color: var(--color-muted);
+  }
+  .action-meta span::before {
+    content: "\25B8";
+    display: inline-block;
+    margin-right: 0.3rem;
+    font-size: 0.65em;
+    color: var(--color-accent);
+  }
+
+  /* ===== Zettelkasten ===== */
+  .zettel-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+  }
+  .zettel-list li {
+    font-size: 0.92rem;
+    line-height: 1.65;
+  }
+  .zettel-list__type {
+    font-family: var(--font-sans);
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--color-accent);
+    margin-right: 0.5rem;
+  }
+  .zettel-list__link {
+    font-weight: 600;
+    color: var(--color-ink);
+  }
+  .zettel-list__reason {
+    color: var(--color-muted);
+  }
+
+  /* ===== Further Reading ===== */
+  .further-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+  }
+  .further-item {
+    padding-bottom: 1.25rem;
+    border-bottom: 1px solid var(--color-rule);
+  }
+  .further-item:last-child { border-bottom: none; padding-bottom: 0; }
+  .further-item__title {
+    font-weight: 600;
+    color: var(--color-ink);
+    font-size: 1rem;
+  }
+  .further-item__reason {
+    font-size: 0.92rem;
+    color: var(--color-body);
+    margin-top: 0.2rem;
+  }
+
+  /* ===== Footer ===== */
+  .footer {
+    text-align: center;
+    padding: 2.5rem 1rem;
+    margin-top: 1rem;
+    font-family: var(--font-sans);
+    font-size: 0.78rem;
+    color: var(--color-muted);
+    letter-spacing: 0.03em;
+  }
+  .footer__brand {
+    color: var(--color-accent);
+    font-weight: 600;
+  }
+
+  /* ===== Responsive ===== */
+  @media (max-width: 640px) {
+    html { font-size: 16px; }
+    .header { padding: 3rem 1rem 2.25rem; }
+    .header__title { font-size: 1.6rem; }
+    .toolbar { flex-wrap: wrap; gap: 0.75rem; padding: 1rem; }
+    .tab-nav {
+      gap: 1.25rem;
+      overflow-x: auto;
+      scroll-behavior: smooth;
+      -webkit-overflow-scrolling: touch;
+      mask-image: linear-gradient(to right, transparent 0, #000 0.5rem, #000 calc(100% - 1.5rem), transparent);
+      -webkit-mask-image: linear-gradient(to right, transparent 0, #000 0.5rem, #000 calc(100% - 1.5rem), transparent);
+      padding-right: 1.5rem;
+    }
+    .tab-nav [role="tab"] { font-size: 0.8rem; white-space: nowrap; }
+    .quote { padding-left: 1.25rem; }
+    .action-item { gap: 1rem; }
+  }
+
+  /* ===== Print ===== */
+  @media print {
+    @page { margin: 2cm; }
+    :root { --color-bg: #fff; --color-surface: #fff; --color-ink: #1c1917; --color-body: #44403c; --color-muted: #6b6560; --color-rule: #d6d3d1; --color-accent: #8d7048; --color-accent-light: #f5f0e8; }
+    html { font-size: 11pt; }
+    body { background: #fff; }
+    .skip-link, .toolbar { display: none; }
+    .header { border-bottom: 2px solid var(--color-ink); padding: 1rem 0; }
+    .tab-nav { display: none; }
+    .tab-panel {
+      display: block !important;
+      page-break-inside: avoid;
+    }
+    .tab-panel::before {
+      content: attr(data-print-title);
+      display: block;
+      font-size: 1.1rem;
+      font-weight: 700;
+      margin-bottom: 0.75rem;
+      padding-bottom: 0.4rem;
+      border-bottom: 1px solid var(--color-rule);
+    }
+    [data-depth="deep"] { display: block !important; }
+    .tab-nav li[data-depth="deep"] { display: block !important; }
+    .argument[open] > .argument__body,
+    .argument > .argument__body { display: block; }
+    .argument { border-bottom: none; }
+    .argument__arrow { display: none; }
+    .quote, .action-item, .concept { break-inside: avoid; }
+    .section { padding: 2rem 0; break-before: avoid; }
+    .footer { font-size: 9pt; }
+  }
+
+  /* ===== Reduced Motion ===== */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+
+  /* ===== Utility ===== */
+  .sr-only {
+    position: absolute;
+    width: 1px; height: 1px;
+    padding: 0; margin: -1px;
+    overflow: hidden;
+    clip: rect(0,0,0,0);
+    white-space: nowrap;
+    border: 0;
+  }
+</style>
+</head>
+<body>
+
+  <a href="#main-content" class="skip-link">跳至主要內容</a>
+
+  <!-- ==================== HEADER ==================== -->
+  <header class="header" role="banner">
+    <div class="page">
+      <p class="header__tag">{{BOOK_TYPE_TAG}}</p>
+      <h1 class="header__title">{{BOOK_TITLE}}</h1>
+      <p class="header__author">{{BOOK_AUTHOR}}</p>
+      <p class="header__verdict">{{ONE_LINE_REVIEW}}</p>
+    </div>
+  </header>
+
+  <!-- ==================== TOOLBAR ==================== -->
+  <div class="toolbar page" role="toolbar" aria-label="檢視設定">
+    <div class="toggle-group">
+      <span class="toggle-group__label">深度</span>
+      <div class="toggle-pill" role="group" aria-label="閱讀深度">
+        <button type="button" id="depth-standard" aria-pressed="true" data-depth-toggle="standard">精華版</button>
+        <button type="button" id="depth-deep" aria-pressed="false" data-depth-toggle="deep">完整版</button>
+      </div>
+    </div>
+    <button type="button" class="theme-btn" id="theme-toggle" aria-label="切換深色模式">
+      <span aria-hidden="true" id="theme-icon">&#9790;</span>
+    </button>
+  </div>
+
+  <main class="page" id="main-content" data-view="standard">
+
+    <!-- ==================== ANALYSIS TABS ==================== -->
+    <section class="section" aria-label="深度分析">
+      <p class="section__label">深度分析</p>
+      <h2>這本書說了什麼，以及它說得對不對</h2>
+
+      <div class="tabs">
+        <ul class="tab-nav" role="tablist" aria-label="分析面向">
+          <li role="presentation">
+            <button role="tab" id="tab-arguments" aria-selected="true"
+                    aria-controls="panel-arguments" tabindex="0">核心論點</button>
+          </li>
+          <li role="presentation">
+            <button role="tab" id="tab-concepts" aria-selected="false"
+                    aria-controls="panel-concepts" tabindex="-1">關鍵概念</button>
+          </li>
+          <li role="presentation" data-depth="deep">
+            <button role="tab" id="tab-critical" aria-selected="false"
+                    aria-controls="panel-critical" tabindex="-1">批判視角</button>
+          </li>
+        </ul>
+
+        <div role="tabpanel" id="panel-arguments" aria-labelledby="tab-arguments"
+             aria-hidden="false" class="tab-panel" tabindex="0"
+             data-print-title="核心論點">
+          {{CORE_ARGUMENTS_HTML}}
+        </div>
+
+        <div role="tabpanel" id="panel-concepts" aria-labelledby="tab-concepts"
+             aria-hidden="true" class="tab-panel" tabindex="-1"
+             data-print-title="關鍵概念">
+          <div class="relations" data-depth="deep">
+            <p class="relations__title">概念關係</p>
+            {{CONCEPT_RELATIONS_SVG}}
+          </div>
+          <div class="concept-list">
+            {{KEY_CONCEPTS_HTML}}
+          </div>
+        </div>
+
+        <div role="tabpanel" id="panel-critical" aria-labelledby="tab-critical"
+             aria-hidden="true" class="tab-panel" tabindex="-1"
+             data-depth="deep" data-print-title="批判視角">
+          <div class="prose">
+            {{CRITICAL_PERSPECTIVES_HTML}}
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== QUOTES ==================== -->
+    <section class="section" aria-label="精選引句">
+      <p class="section__label">精選引句</p>
+      <h2>值得反覆咀嚼的段落</h2>
+      {{QUOTES_HTML}}
+    </section>
+
+    <!-- ==================== ACTIONS ==================== -->
+    <section class="section" aria-label="行動方案">
+      <p class="section__label">行動方案</p>
+      <h2>讀完之後，具體可以做什麼</h2>
+      <div class="action-list">
+        {{ACTION_CARDS_HTML}}
+      </div>
+    </section>
+
+    <!-- ==================== ZETTELKASTEN (deep only) ==================== -->
+    <section class="section" aria-label="知識連結" data-depth="deep">
+      <p class="section__label">知識連結</p>
+      <h2>與你的知識庫如何連結</h2>
+      <ul class="zettel-list">
+        {{ZETTELKASTEN_HTML}}
+      </ul>
+    </section>
+
+    <!-- ==================== FURTHER READING (deep only) ==================== -->
+    <section class="section" aria-label="延伸閱讀" data-depth="deep">
+      <p class="section__label">延伸閱讀</p>
+      <h2>接下來可以讀什麼</h2>
+      <div class="further-list">
+        {{FURTHER_READING_HTML}}
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ==================== FOOTER ==================== -->
+  <footer class="footer" role="contentinfo">
+    <p>Generated by <span class="footer__brand">CRISP 閱讀助手</span></p>
+    <p>{{GENERATION_DATE}}</p>
+  </footer>
+
+  <!-- ==================== JAVASCRIPT ==================== -->
+  <script>
+  (function () {
+    "use strict";
+
+    var mainEl = document.getElementById("main-content");
+
+    /* === Theme toggle === */
+    var themeBtn = document.getElementById("theme-toggle");
+    var themeIcon = document.getElementById("theme-icon");
+    var html = document.documentElement;
+
+    function setTheme(theme) {
+      html.setAttribute("data-theme", theme);
+      themeIcon.textContent = theme === "dark" ? "\u2600" : "\u263E";
+      themeBtn.setAttribute("aria-label", theme === "dark" ? "切換淺色模式" : "切換深色模式");
+      try { localStorage.setItem("crisp-theme", theme); } catch (e) {}
+    }
+
+    /* Restore saved preference or follow system */
+    var saved;
+    try { saved = localStorage.getItem("crisp-theme"); } catch (e) {}
+    if (saved) {
+      setTheme(saved);
+    } else if (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches) {
+      setTheme("dark");
+    }
+
+    themeBtn.addEventListener("click", function () {
+      setTheme(html.getAttribute("data-theme") === "dark" ? "light" : "dark");
+    });
+
+    /* === Depth toggle === */
+    var depthBtns = document.querySelectorAll("[data-depth-toggle]");
+
+    function setDepth(level) {
+      mainEl.setAttribute("data-view", level);
+      depthBtns.forEach(function (b) {
+        b.setAttribute("aria-pressed", b.getAttribute("data-depth-toggle") === level ? "true" : "false");
+      });
+      try { localStorage.setItem("crisp-depth", level); } catch (e) {}
+
+      /* If current tab is hidden in new depth, switch to first tab */
+      var activeTab = document.querySelector('[role="tab"][aria-selected="true"]');
+      if (activeTab) {
+        var parentLi = activeTab.closest("li");
+        if (parentLi && parentLi.getAttribute("data-depth") === "deep" && level === "standard") {
+          activate(tabs[0]);
+        }
+      }
+    }
+
+    var savedDepth;
+    try { savedDepth = localStorage.getItem("crisp-depth"); } catch (e) {}
+    if (savedDepth) setDepth(savedDepth);
+
+    depthBtns.forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        setDepth(btn.getAttribute("data-depth-toggle"));
+      });
+    });
+
+    /* === Tab navigation === */
+    var tabList = document.querySelector('[role="tablist"]');
+    var tabs = Array.from(tabList.querySelectorAll('[role="tab"]'));
+    var panels = tabs.map(function (t) {
+      return document.getElementById(t.getAttribute("aria-controls"));
+    });
+
+    function activate(tab) {
+      tabs.forEach(function (t) {
+        t.setAttribute("aria-selected", "false");
+        t.setAttribute("tabindex", "-1");
+      });
+      panels.forEach(function (p) {
+        p.setAttribute("aria-hidden", "true");
+        p.setAttribute("tabindex", "-1");
+      });
+      tab.setAttribute("aria-selected", "true");
+      tab.setAttribute("tabindex", "0");
+      var activePanel = document.getElementById(tab.getAttribute("aria-controls"));
+      activePanel.setAttribute("aria-hidden", "false");
+      activePanel.setAttribute("tabindex", "0");
+      activePanel.focus();
+    }
+
+    function getVisibleTabs() {
+      return tabs.filter(function (t) {
+        var li = t.closest("li");
+        if (!li) return true;
+        if (li.getAttribute("data-depth") === "deep" && mainEl.getAttribute("data-view") !== "deep") return false;
+        return true;
+      });
+    }
+
+    tabList.addEventListener("click", function (e) {
+      var t = e.target.closest('[role="tab"]');
+      if (t) activate(t);
+    });
+
+    tabList.addEventListener("keydown", function (e) {
+      var visible = getVisibleTabs();
+      var i = visible.indexOf(document.activeElement);
+      if (i === -1) return;
+      var n;
+      switch (e.key) {
+        case "ArrowRight": case "ArrowDown":
+          e.preventDefault(); n = (i + 1) % visible.length; activate(visible[n]); break;
+        case "ArrowLeft": case "ArrowUp":
+          e.preventDefault(); n = (i - 1 + visible.length) % visible.length; activate(visible[n]); break;
+        case "Home": e.preventDefault(); activate(visible[0]); break;
+        case "End":  e.preventDefault(); activate(visible[visible.length - 1]); break;
+      }
+    });
+
+    /* Force all details open for print */
+    if (window.matchMedia) {
+      window.matchMedia("print").addEventListener("change", function (e) {
+        if (!e.matches) return;
+        document.querySelectorAll("details.argument").forEach(function (d) {
+          d.setAttribute("open", "");
+        });
+      });
+    }
+  })();
+  </script>
+
+</body>
+</html>
