@@ -143,7 +143,81 @@
     line-height: 1.75;
   }
 
-  /* ===== Toolbar (theme + depth toggle) ===== */
+  /* ===== Book Introduction ===== */
+  .book-intro {
+    padding: 2rem 0;
+    border-bottom: 1px solid var(--color-rule);
+  }
+  .book-intro__text {
+    font-size: 0.95rem;
+    color: var(--color-body);
+    line-height: 1.85;
+    max-width: var(--width-content);
+  }
+
+  /* ===== TIPS Scores ===== */
+  .tips-scores {
+    padding: 2rem 0;
+    border-bottom: 1px solid var(--color-rule);
+  }
+  .tips-scores__label {
+    font-family: var(--font-sans);
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--color-accent);
+    margin-bottom: 1rem;
+  }
+  .tips-scores__grid {
+    display: flex;
+    gap: 2.5rem;
+    flex-wrap: wrap;
+    margin-bottom: 1rem;
+  }
+  .tips-scores__item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+  .tips-scores__dim {
+    font-family: var(--font-sans);
+    font-size: 0.78rem;
+    color: var(--color-muted);
+    letter-spacing: 0.02em;
+  }
+  .tips-scores__dots {
+    display: flex;
+    gap: 0.35rem;
+    font-size: 0.9rem;
+    line-height: 1;
+    letter-spacing: 0.1em;
+  }
+  .tips-scores__dot--filled {
+    color: var(--color-accent);
+  }
+  .tips-scores__dot--empty {
+    color: var(--color-rule);
+  }
+  .tips-scores__total {
+    font-family: var(--font-sans);
+    font-size: 0.85rem;
+    color: var(--color-body);
+    margin-bottom: 0.75rem;
+  }
+  .tips-scores__total strong {
+    color: var(--color-ink);
+  }
+  .tips-scores__legend {
+    font-family: var(--font-sans);
+    font-size: 0.72rem;
+    color: var(--color-muted);
+    letter-spacing: 0.02em;
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--color-rule);
+  }
+
+  /* ===== Toolbar ===== */
   .toolbar {
     display: flex;
     justify-content: center;
@@ -154,62 +228,32 @@
     font-family: var(--font-sans);
     font-size: 0.8rem;
   }
-  .toggle-group {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    color: var(--color-muted);
-  }
-  .toggle-group__label {
-    letter-spacing: 0.04em;
-  }
-  .toggle-pill {
-    position: relative;
+  .toolbar-btn {
     display: inline-flex;
-    background: var(--color-accent-light);
-    border: 1px solid var(--color-rule);
-    padding: 2px;
-    gap: 0;
-  }
-  .toggle-pill button {
+    align-items: center;
+    gap: 0.4rem;
     font-family: var(--font-sans);
     font-size: 0.78rem;
     font-weight: 500;
-    padding: 0.3rem 0.75rem;
-    border: none;
-    background: transparent;
-    color: var(--color-muted);
-    cursor: pointer;
-    transition: color 0.2s, background-color 0.2s;
-    letter-spacing: 0.02em;
-    white-space: nowrap;
-  }
-  .toggle-pill button[aria-pressed="true"] {
-    background: var(--color-surface);
-    color: var(--color-ink);
-  }
-  .toggle-pill button:focus-visible {
-    outline: 2px solid var(--color-accent);
-    outline-offset: 1px;
-  }
-  .theme-btn {
-    font-family: var(--font-sans);
-    font-size: 0.85rem;
     background: none;
     border: 1px solid var(--color-rule);
-    padding: 0.3rem 0.6rem;
+    padding: 0.35rem 0.7rem;
     cursor: pointer;
     color: var(--color-muted);
     transition: color 0.2s, border-color 0.2s;
     line-height: 1;
+    letter-spacing: 0.02em;
   }
-  .theme-btn:hover {
+  .toolbar-btn:hover {
     color: var(--color-ink);
     border-color: var(--color-accent);
   }
-  .theme-btn:focus-visible {
+  .toolbar-btn:focus-visible {
     outline: 2px solid var(--color-accent);
     outline-offset: 2px;
+  }
+  .toolbar-btn svg {
+    flex-shrink: 0;
   }
 
   /* ===== Section ===== */
@@ -230,18 +274,6 @@
     margin-bottom: 0.6rem;
   }
 
-  /* ===== Depth visibility ===== */
-  [data-depth="deep"] {
-    display: none;
-  }
-  [data-view="deep"] [data-depth="deep"] {
-    display: block;
-  }
-  /* Tab panels need special handling */
-  [data-view="deep"] .tab-panel[data-depth="deep"][aria-hidden="false"] {
-    display: block;
-  }
-
   /* ===== Tabs ===== */
   .tabs {
     margin-top: 2rem;
@@ -252,12 +284,6 @@
     border-bottom: 1px solid var(--color-rule);
     list-style: none;
     margin-bottom: 2rem;
-  }
-  .tab-nav li[data-depth="deep"] {
-    display: none;
-  }
-  [data-view="deep"] .tab-nav li[data-depth="deep"] {
-    display: block;
   }
   .tab-nav [role="tab"] {
     font-family: var(--font-sans);
@@ -460,6 +486,42 @@
     color: var(--color-accent);
   }
 
+  /* ===== Concept boundary ===== */
+  .concept__boundary {
+    font-size: 0.85em;
+    color: var(--color-muted);
+    margin-top: 0.25rem;
+  }
+  .concept__boundary::before {
+    content: "";
+    display: inline-block;
+    width: 2px;
+    height: 0.8em;
+    background: var(--color-accent);
+    margin-right: 0.5em;
+    vertical-align: middle;
+  }
+
+  /* ===== Meta Knowledge ===== */
+  .meta-list { display: flex; flex-direction: column; gap: 1.5rem; }
+  .meta-item__lens {
+    font-family: var(--font-serif);
+    font-size: 1.1rem;
+    color: var(--color-ink);
+    margin-bottom: 0.5rem;
+  }
+  .meta-item__desc {
+    color: var(--color-body);
+    line-height: 1.75;
+  }
+  .meta-item__delta {
+    font-size: 0.9em;
+    color: var(--color-muted);
+    margin-top: 0.5rem;
+    padding-left: 1rem;
+    border-left: 2px solid var(--color-accent);
+  }
+
   /* ===== Zettelkasten ===== */
   .zettel-list {
     list-style: none;
@@ -486,6 +548,10 @@
   }
   .zettel-list__reason {
     color: var(--color-muted);
+  }
+  .zettel-list__link-to {
+    color: var(--color-muted);
+    font-size: 0.9em;
   }
 
   /* ===== Further Reading ===== */
@@ -543,6 +609,7 @@
     .tab-nav [role="tab"] { font-size: 0.8rem; white-space: nowrap; }
     .quote { padding-left: 1.25rem; }
     .action-item { gap: 1rem; }
+    .tips-scores__grid { gap: 1.5rem; }
   }
 
   /* ===== Print ===== */
@@ -567,8 +634,6 @@
       padding-bottom: 0.4rem;
       border-bottom: 1px solid var(--color-rule);
     }
-    [data-depth="deep"] { display: block !important; }
-    .tab-nav li[data-depth="deep"] { display: block !important; }
     .argument[open] > .argument__body,
     .argument > .argument__body { display: block; }
     .argument { border-bottom: none; }
@@ -613,21 +678,27 @@
     </div>
   </header>
 
+  <!-- ==================== BOOK INTRODUCTION ==================== -->
+  <div class="book-intro page">
+    <p class="book-intro__text">{{BOOK_INTRODUCTION}}</p>
+  </div>
+
+  <!-- ==================== TIPS SCORES ==================== -->
+  {{TIPS_SCORES_HTML}}
+
   <!-- ==================== TOOLBAR ==================== -->
   <div class="toolbar page" role="toolbar" aria-label="檢視設定">
-    <div class="toggle-group">
-      <span class="toggle-group__label">深度</span>
-      <div class="toggle-pill" role="group" aria-label="閱讀深度">
-        <button type="button" id="depth-standard" aria-pressed="true" data-depth-toggle="standard">精華版</button>
-        <button type="button" id="depth-deep" aria-pressed="false" data-depth-toggle="deep">完整版</button>
-      </div>
-    </div>
-    <button type="button" class="theme-btn" id="theme-toggle" aria-label="切換深色模式">
+    <button type="button" class="toolbar-btn" id="copy-md" aria-label="複製為 Markdown">
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="5.5" y="5.5" width="8" height="8" rx="1.5"/><path d="M3.5 10.5V3a1.5 1.5 0 0 1 1.5-1.5H10.5"/></svg>
+      <span id="copy-md-text">複製為 Markdown</span>
+    </button>
+    <button type="button" class="toolbar-btn" id="theme-toggle" aria-label="切換深色模式">
       <span aria-hidden="true" id="theme-icon">&#9790;</span>
+      <span id="theme-text">深色模式</span>
     </button>
   </div>
 
-  <main class="page" id="main-content" data-view="standard">
+  <main class="page" id="main-content">
 
     <!-- ==================== ANALYSIS TABS ==================== -->
     <section class="section" aria-label="深度分析">
@@ -644,7 +715,7 @@
             <button role="tab" id="tab-concepts" aria-selected="false"
                     aria-controls="panel-concepts" tabindex="-1">關鍵概念</button>
           </li>
-          <li role="presentation" data-depth="deep">
+          <li role="presentation">
             <button role="tab" id="tab-critical" aria-selected="false"
                     aria-controls="panel-critical" tabindex="-1">批判視角</button>
           </li>
@@ -659,7 +730,7 @@
         <div role="tabpanel" id="panel-concepts" aria-labelledby="tab-concepts"
              aria-hidden="true" class="tab-panel" tabindex="-1"
              data-print-title="關鍵概念">
-          <div class="relations" data-depth="deep">
+          <div class="relations">
             <p class="relations__title">概念關係</p>
             {{CONCEPT_RELATIONS_SVG}}
           </div>
@@ -670,7 +741,7 @@
 
         <div role="tabpanel" id="panel-critical" aria-labelledby="tab-critical"
              aria-hidden="true" class="tab-panel" tabindex="-1"
-             data-depth="deep" data-print-title="批判視角">
+             data-print-title="批判視角">
           <div class="prose">
             {{CRITICAL_PERSPECTIVES_HTML}}
           </div>
@@ -694,8 +765,11 @@
       </div>
     </section>
 
-    <!-- ==================== ZETTELKASTEN (deep only) ==================== -->
-    <section class="section" aria-label="知識連結" data-depth="deep">
+    <!-- ==================== META KNOWLEDGE ==================== -->
+    {{META_KNOWLEDGE_HTML}}
+
+    <!-- ==================== ZETTELKASTEN ==================== -->
+    <section class="section" aria-label="知識連結">
       <p class="section__label">知識連結</p>
       <h2>與你的知識庫如何連結</h2>
       <ul class="zettel-list">
@@ -703,8 +777,8 @@
       </ul>
     </section>
 
-    <!-- ==================== FURTHER READING (deep only) ==================== -->
-    <section class="section" aria-label="延伸閱讀" data-depth="deep">
+    <!-- ==================== FURTHER READING ==================== -->
+    <section class="section" aria-label="延伸閱讀">
       <p class="section__label">延伸閱讀</p>
       <h2>接下來可以讀什麼</h2>
       <div class="further-list">
@@ -716,7 +790,7 @@
 
   <!-- ==================== FOOTER ==================== -->
   <footer class="footer" role="contentinfo">
-    <p>Generated by <span class="footer__brand">CRISP 閱讀助手</span></p>
+    <p>Generated by <span class="footer__brand">CRISP 閱讀解構師</span></p>
     <p>{{GENERATION_DATE}}</p>
   </footer>
 
@@ -725,16 +799,16 @@
   (function () {
     "use strict";
 
-    var mainEl = document.getElementById("main-content");
-
     /* === Theme toggle === */
     var themeBtn = document.getElementById("theme-toggle");
     var themeIcon = document.getElementById("theme-icon");
+    var themeText = document.getElementById("theme-text");
     var html = document.documentElement;
 
     function setTheme(theme) {
       html.setAttribute("data-theme", theme);
       themeIcon.textContent = theme === "dark" ? "\u2600" : "\u263E";
+      themeText.textContent = theme === "dark" ? "淺色模式" : "深色模式";
       themeBtn.setAttribute("aria-label", theme === "dark" ? "切換淺色模式" : "切換深色模式");
       try { localStorage.setItem("crisp-theme", theme); } catch (e) {}
     }
@@ -750,36 +824,6 @@
 
     themeBtn.addEventListener("click", function () {
       setTheme(html.getAttribute("data-theme") === "dark" ? "light" : "dark");
-    });
-
-    /* === Depth toggle === */
-    var depthBtns = document.querySelectorAll("[data-depth-toggle]");
-
-    function setDepth(level) {
-      mainEl.setAttribute("data-view", level);
-      depthBtns.forEach(function (b) {
-        b.setAttribute("aria-pressed", b.getAttribute("data-depth-toggle") === level ? "true" : "false");
-      });
-      try { localStorage.setItem("crisp-depth", level); } catch (e) {}
-
-      /* If current tab is hidden in new depth, switch to first tab */
-      var activeTab = document.querySelector('[role="tab"][aria-selected="true"]');
-      if (activeTab) {
-        var parentLi = activeTab.closest("li");
-        if (parentLi && parentLi.getAttribute("data-depth") === "deep" && level === "standard") {
-          activate(tabs[0]);
-        }
-      }
-    }
-
-    var savedDepth;
-    try { savedDepth = localStorage.getItem("crisp-depth"); } catch (e) {}
-    if (savedDepth) setDepth(savedDepth);
-
-    depthBtns.forEach(function (btn) {
-      btn.addEventListener("click", function () {
-        setDepth(btn.getAttribute("data-depth-toggle"));
-      });
     });
 
     /* === Tab navigation === */
@@ -806,32 +850,22 @@
       activePanel.focus();
     }
 
-    function getVisibleTabs() {
-      return tabs.filter(function (t) {
-        var li = t.closest("li");
-        if (!li) return true;
-        if (li.getAttribute("data-depth") === "deep" && mainEl.getAttribute("data-view") !== "deep") return false;
-        return true;
-      });
-    }
-
     tabList.addEventListener("click", function (e) {
       var t = e.target.closest('[role="tab"]');
       if (t) activate(t);
     });
 
     tabList.addEventListener("keydown", function (e) {
-      var visible = getVisibleTabs();
-      var i = visible.indexOf(document.activeElement);
+      var i = tabs.indexOf(document.activeElement);
       if (i === -1) return;
       var n;
       switch (e.key) {
         case "ArrowRight": case "ArrowDown":
-          e.preventDefault(); n = (i + 1) % visible.length; activate(visible[n]); break;
+          e.preventDefault(); n = (i + 1) % tabs.length; activate(tabs[n]); break;
         case "ArrowLeft": case "ArrowUp":
-          e.preventDefault(); n = (i - 1 + visible.length) % visible.length; activate(visible[n]); break;
-        case "Home": e.preventDefault(); activate(visible[0]); break;
-        case "End":  e.preventDefault(); activate(visible[visible.length - 1]); break;
+          e.preventDefault(); n = (i - 1 + tabs.length) % tabs.length; activate(tabs[n]); break;
+        case "Home": e.preventDefault(); activate(tabs[0]); break;
+        case "End":  e.preventDefault(); activate(tabs[tabs.length - 1]); break;
       }
     });
 
@@ -844,6 +878,176 @@
         });
       });
     }
+
+    /* === Copy as Markdown === */
+    var copyBtn = document.getElementById("copy-md");
+    var copyText = document.getElementById("copy-md-text");
+    copyBtn.addEventListener("click", function () {
+      var md = [];
+      var title = document.querySelector(".header__title");
+      var author = document.querySelector(".header__author");
+      var verdict = document.querySelector(".header__verdict");
+      var intro = document.querySelector(".book-intro__text");
+
+      md.push("# " + (title ? title.textContent.trim() : ""));
+      if (author) md.push("**" + author.textContent.trim() + "**");
+      if (verdict) md.push("*" + verdict.textContent.trim() + "*");
+      md.push("");
+
+      /* Book introduction */
+      if (intro && intro.textContent.trim()) {
+        md.push("## 書籍簡介");
+        md.push(intro.textContent.trim());
+        md.push("");
+      }
+
+      /* TIPS scores */
+      var tipsItems = document.querySelectorAll(".tips-scores__item");
+      if (tipsItems.length > 0) {
+        md.push("## TIPS 評分");
+        tipsItems.forEach(function (item) {
+          var dots = item.querySelector(".tips-scores__dots");
+          var dim = item.querySelector(".tips-scores__dim");
+          var filled = dots ? dots.querySelectorAll(".tips-scores__dot--filled").length : 0;
+          if (dim) md.push("- **" + dim.textContent.trim() + "**: " + filled + "/3");
+        });
+        var total = document.querySelector(".tips-scores__total");
+        if (total) md.push("\n" + total.textContent.trim());
+        md.push("");
+      }
+
+      /* Core arguments */
+      var args = document.querySelectorAll(".argument");
+      if (args.length > 0) {
+        md.push("## 核心論點");
+        args.forEach(function (a) {
+          var sum = a.querySelector("summary");
+          var body = a.querySelector(".argument__body");
+          if (sum) md.push("### " + sum.textContent.replace(/[▶►▸]/g, "").trim());
+          if (body) md.push(body.textContent.trim());
+          md.push("");
+        });
+      }
+
+      /* Key concepts */
+      var concepts = document.querySelectorAll(".concept");
+      if (concepts.length > 0) {
+        md.push("## 關鍵概念");
+        concepts.forEach(function (c) {
+          var name = c.querySelector(".concept__name");
+          var def = c.querySelector(".concept__def");
+          var boundary = c.querySelector(".concept__boundary");
+          if (name) md.push("### " + name.textContent.trim());
+          if (def) md.push(def.textContent.trim());
+          if (boundary) md.push("*" + boundary.textContent.trim() + "*");
+          md.push("");
+        });
+      }
+
+      /* Critical perspectives */
+      var critical = document.querySelector("#panel-critical .prose");
+      if (critical && critical.textContent.trim()) {
+        md.push("## 批判視角");
+        var critHeaders = critical.querySelectorAll("h3");
+        if (critHeaders.length > 0) {
+          critHeaders.forEach(function (h) {
+            md.push("### " + h.textContent.trim());
+            var next = h.nextElementSibling;
+            while (next && next.tagName !== "H3") {
+              if (next.textContent.trim()) md.push(next.textContent.trim());
+              next = next.nextElementSibling;
+            }
+            md.push("");
+          });
+        } else {
+          md.push(critical.textContent.trim());
+          md.push("");
+        }
+      }
+
+      /* Quotes */
+      var quotes = document.querySelectorAll(".quote");
+      if (quotes.length > 0) {
+        md.push("## 精選引句");
+        quotes.forEach(function (q) {
+          var text = q.querySelector(".quote__text");
+          var source = q.querySelector(".quote__source");
+          if (text) md.push("> " + text.textContent.trim());
+          if (source) md.push("> — " + source.textContent.trim());
+          md.push("");
+        });
+      }
+
+      /* Actions */
+      var actions = document.querySelectorAll(".action-item");
+      if (actions.length > 0) {
+        md.push("## 行動方案");
+        actions.forEach(function (a, idx) {
+          var h = a.querySelector("h4");
+          var p = a.querySelector("p");
+          var meta = a.querySelectorAll(".action-meta span");
+          md.push((idx + 1) + ". **" + (h ? h.textContent.trim() : "") + "**");
+          if (p) md.push("   " + p.textContent.trim());
+          meta.forEach(function (m) { md.push("   - " + m.textContent.trim()); });
+          md.push("");
+        });
+      }
+
+      /* Meta knowledge */
+      var metaItems = document.querySelectorAll(".meta-item");
+      if (metaItems.length > 0) {
+        md.push("## 思維模型");
+        metaItems.forEach(function (m) {
+          var lens = m.querySelector(".meta-item__lens");
+          var desc = m.querySelector(".meta-item__desc");
+          var delta = m.querySelector(".meta-item__delta");
+          if (lens) md.push("### " + lens.textContent.trim());
+          if (desc) md.push(desc.textContent.trim());
+          if (delta) md.push("*" + delta.textContent.trim() + "*");
+          md.push("");
+        });
+      }
+
+      /* Zettelkasten */
+      var zettels = document.querySelectorAll(".zettel-list li");
+      if (zettels.length > 0) {
+        md.push("## 知識連結");
+        zettels.forEach(function (z) {
+          md.push("- " + z.textContent.trim());
+        });
+        md.push("");
+      }
+
+      /* Further reading */
+      var further = document.querySelectorAll(".further-item");
+      if (further.length > 0) {
+        md.push("## 延伸閱讀");
+        further.forEach(function (f) {
+          var t = f.querySelector(".further-item__title");
+          var r = f.querySelector(".further-item__reason");
+          if (t) md.push("- **" + t.textContent.trim() + "**");
+          if (r) md.push("  " + r.textContent.trim());
+        });
+        md.push("");
+      }
+
+      var text = md.join("\n");
+      navigator.clipboard.writeText(text).then(function () {
+        var orig = copyText.textContent;
+        copyText.textContent = "已複製";
+        setTimeout(function () { copyText.textContent = orig; }, 2000);
+      }).catch(function () {
+        /* Fallback for older browsers */
+        var ta = document.createElement("textarea");
+        ta.value = text;
+        ta.style.position = "fixed";
+        ta.style.left = "-9999px";
+        document.body.appendChild(ta);
+        ta.select();
+        try { document.execCommand("copy"); copyText.textContent = "已複製"; setTimeout(function () { copyText.textContent = "複製為 Markdown"; }, 2000); } catch (e) {}
+        document.body.removeChild(ta);
+      });
+    });
   })();
   </script>
 
