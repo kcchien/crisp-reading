@@ -35,6 +35,8 @@ npx skills add kcchien/crisp-reading
 
 就這樣。當你請 AI 助手讀書或分析書籍時，它會自動啟用這個技能。
 
+> **使用 Claude.ai 桌面版？** 下載 [crisp-reading.skill](https://books.kcchien.com/crisp-reading.skill)，到 [claude.ai/customize/skills](https://claude.ai/customize/skills) 上傳即可。詳見 [圖文安裝說明](https://github.com/kcchien/skills/blob/main/docs/install-crisp-reading.md)。
+
 ## ✨ 你可以怎麼用？
 
 用自然語言跟你的 AI 助手對話即可：
@@ -206,6 +208,8 @@ npx skills add kcchien/crisp-reading
 ```
 
 That's it. Your AI agent will automatically activate when you ask it to read or analyze a book.
+
+> **Using Claude.ai desktop?** Download [crisp-reading.skill](https://books.kcchien.com/crisp-reading.skill), then upload at [claude.ai/customize/skills](https://claude.ai/customize/skills). See [step-by-step guide](https://github.com/kcchien/skills/blob/main/docs/install-crisp-reading.md).
 
 ## ✨ What Can You Do With It?
 
