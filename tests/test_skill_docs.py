@@ -46,8 +46,10 @@ class SkillDocumentationTests(unittest.TestCase):
         for phrase in required_phrases:
             self.assertIn(phrase, self.analysis)
 
-    def test_readme_matches_continuous_report_and_has_no_missing_asset_links(self):
-        self.assertNotRegex(self.readme, r'assets/(cover|flow|sample-report)\.png')
+    def test_readme_keeps_portfolio_cover_and_matches_continuous_report(self):
+        cover_path = PACKAGE_DIR / "assets" / "cover.webp"
+        self.assertIn('src="assets/cover.webp"', self.readme)
+        self.assertTrue(cover_path.is_file())
         for stale_claim in ("70,000+", "444+", "Claude 知識", "collapsible arguments", "SVG diagram", "精華版 / 完整版切換"):
             self.assertNotIn(stale_claim, self.readme)
         self.assertIn("連續章節", self.readme)
