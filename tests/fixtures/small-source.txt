@@ -1,0 +1,4 @@
+CRISP extraction smoke test
+
+Physical PDF page 1 contains this sentence.
+The printed page label is not provided.

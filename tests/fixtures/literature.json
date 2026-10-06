@@ -1,0 +1,66 @@
+{
+  "slug": "before-rain-stops",
+  "book_title": "雨停以前",
+  "book_author": null,
+  "book_type_tag": "合成短篇小說",
+  "report_mode": "full",
+  "reading_lens": "literature",
+  "one_line_review": "以藍傘、車票與留白寫出延宕面對失落的過程。",
+  "book_introduction": "三節合成短篇；分析限於提供的全文。",
+  "coverage": {
+    "requested_scope": "短篇全文",
+    "read_locations": ["第一節", "第二節", "第三節"],
+    "unread_locations": [],
+    "failed_locations": [],
+    "source_basis": ["full_text"],
+    "limitations": ["父親與藍傘的關係未明說"]
+  },
+  "sources": [
+    {
+      "id": "src-story",
+      "type": "provided_text",
+      "title": "雨停以前",
+      "edition": "合成控制材料 v1",
+      "locations": ["第一節", "第二節", "第三節"]
+    }
+  ],
+  "tips_scores": {
+    "T": {"score": null, "status": "not_applicable", "reason": "小說不以提供工具為目的。"},
+    "I": {"score": 2, "status": "assessed", "reason": "意象與留白容許多種詮釋。"},
+    "P": {"score": null, "status": "unknown", "reason": "未提供讀者情境。"},
+    "S": {"score": null, "status": "not_applicable", "reason": "小說不以實證論證為目的。"}
+  },
+  "core_arguments": [
+    {
+      "title": "敘事以物件承載未說出口的失落",
+      "body": "藍傘從暗處移到櫃檯中央，對應阿禾從延宕到面對。",
+      "source_ids": ["src-story"],
+      "analysis_type": "analyst_inference"
+    }
+  ],
+  "key_concepts": [
+    {"name": "藍傘意象", "definition": "連結失物、父親與等待。", "boundary": "文本沒有證明傘屬於父親。"}
+  ],
+  "concept_relations": [],
+  "critical_perspectives": [
+    {
+      "title": "另一種詮釋",
+      "content": "結尾也可能是阿禾仍未放下，而非完成告別。",
+      "source_ids": ["src-story"],
+      "analysis_type": "analyst_inference"
+    }
+  ],
+  "quotes": [
+    {
+      "quote_type": "direct",
+      "original_text": "等雨停",
+      "translation": null,
+      "source_id": "src-story",
+      "location": "第二節"
+    }
+  ],
+  "actions": [],
+  "zettelkasten": [],
+  "meta_knowledge": [],
+  "further_reading": []
+}

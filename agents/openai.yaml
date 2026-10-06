@@ -1,0 +1,3 @@
+interface:
+  display_name: "CRISP Reading"
+  short_description: "以可回查來源分析書籍，產出具範圍、限制與來源的繁體中文 HTML 閱讀報告。"

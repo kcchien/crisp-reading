@@ -1,0 +1,65 @@
+{
+  "slug": "controlled-nonfiction",
+  "book_title": "協作決策手冊",
+  "book_author": null,
+  "book_type_tag": "合成非虛構控制材料",
+  "report_mode": "full",
+  "reading_lens": "nonfiction",
+  "one_line_review": "可操作框架清楚，但證據與跨章一致性不足。",
+  "book_introduction": "本報告只分析四個已提供章節。材料為合成控制文本。",
+  "coverage": {
+    "requested_scope": "控制材料全文",
+    "read_locations": ["第一章", "第二章", "第三章", "結語"],
+    "unread_locations": [],
+    "failed_locations": [],
+    "source_basis": ["full_text"],
+    "limitations": ["沒有外部研究", "沒有讀者個人情境"]
+  },
+  "sources": [
+    {
+      "id": "src-book",
+      "type": "provided_text",
+      "title": "協作決策手冊",
+      "edition": "合成控制材料 v1",
+      "locations": ["第一章", "第二章", "第三章", "結語"]
+    }
+  ],
+  "tips_scores": {
+    "T": {"score": 2, "status": "assessed", "reason": "提供可逆性與反證門檻流程。"},
+    "I": {"score": 2, "status": "assessed", "reason": "把錯誤成本與求證成本放在一起看。"},
+    "P": {"score": null, "status": "unknown", "reason": "未提供讀者情境。"},
+    "S": {"score": 1, "status": "assessed", "reason": "只有合成營運數據，沒有對照。"}
+  },
+  "core_arguments": [
+    {
+      "title": "讓求證成本與錯誤成本相稱",
+      "body": "可逆決策可先做小規模試驗。",
+      "source_ids": ["src-book"],
+      "analysis_type": "source_claim"
+    }
+  ],
+  "key_concepts": [
+    {"name": "反證門檻", "definition": "預先寫下會推翻假設的訊號。", "boundary": "需先有可觀察指標。"}
+  ],
+  "concept_relations": [],
+  "critical_perspectives": [
+    {
+      "title": "跨章張力",
+      "content": "第三章的完整共識要求與第一章的先試驗主張有張力。",
+      "source_ids": ["src-book"],
+      "analysis_type": "analyst_inference"
+    }
+  ],
+  "quotes": [
+    {
+      "quote_type": "paraphrase",
+      "paraphrase": "可逆決策先做小規模試驗。",
+      "source_id": "src-book",
+      "location": "第一章第一段"
+    }
+  ],
+  "actions": [],
+  "zettelkasten": [],
+  "meta_knowledge": [],
+  "further_reading": []
+}

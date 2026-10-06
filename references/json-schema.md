@@ -1,115 +1,191 @@
-# 分析 JSON Schema
+# CRISP 報告資料契約
 
-> Claude 分析完成後，依此結構產出 JSON，交由 render-report.py 渲染為 HTML。
+`scripts/report_contract.py` 的 `validate_report(data)` 是可執行的契約權威；本文件說明模型應產出的資料，不另建立一套可能漂移的規則。產出後先執行：
+
+```bash
+python scripts/render-report.py analysis.json --validate
+python scripts/render-report.py analysis.json -o reading-report.html
+```
+
+驗證錯誤包含 `path`、`code`、`message`。只有 `errors: []` 才能渲染；舊 JSON 缺欄位時補齊真實資料，不推測閱讀範圍或來源。
+
+## 根層欄位
 
 ```json
 {
-  "slug": "almanack-of-naval",           // 用於檔名
-  "book_title": "納瓦爾寶典（The Almanack of Naval Ravikant）",
-  "book_author": "Eric Jorgenson",
-  "book_author_zh": "艾瑞克·乔根森",    // 作者中文譯名（選填，有公認譯名時填寫）
-  "book_type_tag": "自我成長",            // 書型標籤（見 analysis.md 書型分類）
-  "one_line_review": "一句話評價（15-25 字）",
-  "book_introduction": "書籍簡介（3-5 句），涵蓋主題、作者背景、書的定位",
+  "slug": "book-slug",
+  "book_title": "書名",
+  "book_author": null,
+  "book_type_tag": "使用者可讀的類型文字",
+  "report_mode": "full",
+  "reading_lens": "nonfiction",
+  "one_line_review": "一句結論",
+  "book_introduction": "依據與限制清楚的簡介",
+  "coverage": {},
+  "sources": [],
+  "tips_scores": {},
+  "core_arguments": [],
+  "key_concepts": [],
+  "concept_relations": [],
+  "critical_perspectives": [],
+  "quotes": [],
+  "actions": [],
+  "zettelkasten": [],
+  "meta_knowledge": [],
+  "further_reading": []
+}
+```
 
-  "tips_scores": {
-    "T": 2,
-    "I": 3,
-    "P": 2,
-    "S": 1,
-    "total": 8,
-    "verdict": "好書"
-  },
+- `report_mode`：`full`、`preliminary`、`quick`、`notes`。部分閱讀以 `coverage` 表達，不冒充 full。
+- `reading_lens`：`nonfiction`、`literature`、`mixed`。
+- `book_author`：可為 `null`；未知就保留未知，不填猜測值。
+- `sources` 及各內容陣列即使為空也要明列，讓「無資料」與「忘了產出」可區分。
+- `full` 必須有已讀位置、可回查來源及主要分析；其他模式仍需說明實際依據。
 
+## 閱讀範圍
+
+```json
+{
+  "coverage": {
+    "requested_scope": "使用者要求的範圍",
+    "read_locations": ["第一章", "第二章"],
+    "unread_locations": ["第三章"],
+    "failed_locations": [],
+    "source_basis": ["partial_text"],
+    "limitations": ["未提供第三章"]
+  }
+}
+```
+
+`source_basis` 可用值：`full_text`、`partial_text`、`reader_notes`、`public_metadata`、`none`。模型既有知識不是已查閱的公開資料；若只有書名且未查到資料，使用 `none`。`none` 必須單獨使用，且此時 `read_locations` 必須為空。`report_mode: full` 必須包含 `full_text`，且 `unread_locations`、`failed_locations` 都必須為空；否則應改用 `preliminary`，不可交付為完整深讀。
+
+## 來源與論點歸屬
+
+```json
+{
+  "sources": [
+    {
+      "id": "src-book",
+      "type": "provided_text",
+      "title": "書名或文件標題",
+      "edition": "版本；未知可省略",
+      "locations": ["第一章", "第二章"],
+      "url": "https://example.org/source；沒有可省略"
+    }
+  ],
   "core_arguments": [
     {
       "title": "論點標題",
-      "body": "論點說明文字，純文字或含 inline HTML（如 <strong>、<em>）。render-report.py 會自動偵測 HTML 標籤"
+      "body": "論點說明",
+      "analysis_type": "source_claim",
+      "source_ids": ["src-book"]
     }
   ],
-
-  "key_concepts": [
-    {
-      "name": "概念名稱",
-      "definition": "白話解釋",
-      "boundary": "適用條件與失效邊界（選填，僅在概念有明確邊界時填寫）"
-    }
-  ],
-
-  "concept_relations_svg": "<svg>...</svg>",  // 概念關係圖（可選，見 design-spec.md SVG 配色）
-
   "critical_perspectives": [
     {
-      "title": "批判面向標題",
-      "content": "批判內容（純文字或 HTML）"
-    }
-  ],
-
-  "quotes": [
-    {
-      "text": "引句內容（英文書附中文翻譯）",
-      "source": "來源（章節/頁碼）"
-    }
-  ],
-
-  "actions": [
-    {
-      "title": "行動標題",
-      "description": "行動說明",
-      "when": "時間",
-      "context": "場景",
-      "action": "具體做法"
-    }
-  ],
-
-  "zettelkasten": [
-    {
-      "type": "permanent",           // "fleeting" | "literature" | "permanent"
-      "concept": "概念名稱",
-      "reason": "為什麼連結",
-      "links_to": "連結到哪本書或哪個知識體系（選填）"
-    }
-  ],
-
-  "meta_knowledge": [
-    {
-      "lens": "思維模型名稱",
-      "description": "這個模型怎麼用、能看到什麼",
-      "delta": "讀完前後，你對這件事的理解有什麼不同"
-    }
-  ],
-
-  "further_reading": [
-    {
-      "title": "《窮查理的普通常識》（Poor Charlie's Almanack）— Charlie Munger",
-      "reason": "為什麼推薦"
+      "title": "另一種解釋",
+      "content": "這是分析者根據文本提出的詮釋。",
+      "analysis_type": "analyst_inference",
+      "source_ids": ["src-book"]
     }
   ]
 }
 ```
 
-## 欄位說明
+來源 `id` 必須唯一。`source_claim` 至少指向一個有效 `source_id`；`analyst_inference` 明示為分析者推論，可列支撐來源，但不能寫成作者原意。來源位置要能讓讀者回查，不把章節索引當成 PDF 頁碼。
 
-| 欄位 | 必填 | 說明 |
-|------|------|------|
-| slug | ✅ | 英文 kebab-case，用於輸出檔名 |
-| book_title | ✅ | 書名。英文書有中文譯名時用「中文書名（原文）」格式，如「納瓦爾寶典（The Almanack of Naval Ravikant）」；無譯名則用原文；中文書直接用中文書名 |
-| book_author | ✅ | 作者原文名 |
-| book_author_zh | 選填 | 作者中文譯名。有公認中文譯名時填寫；render-report.py 會自動組合為「中文譯名（原文名）」格式顯示 |
-| book_type_tag | ✅ | 書型標籤（如「理論思想」「工具技術」） |
-| one_line_review | ✅ | 一句話評價，15-25 字 |
-| book_introduction | ✅ | 書籍簡介（3-5 句），涵蓋主題、作者背景、書的定位。顯示在 HTML 報告 header 下方 |
-| tips_scores | ✅ | TIPS 四維度評分（T/I/P/S 各 1-3 分）、total、verdict（總分解讀） |
-| core_arguments | ✅ | 全書 3-7 個核心論點 |
-| key_concepts | ✅ | 關鍵概念列表 |
-| concept_relations_svg | 選填 | 內嵌 SVG（見 design-spec.md 配色規範） |
-| critical_perspectives | ✅ | 批判視角，可為陣列或純字串 |
-| quotes | ✅ | 精選引句（3-5 則） |
-| actions | ✅ | 行動承諾（3-5 個），需含 when/context/action |
-| zettelkasten | ✅ | 知識連結筆記 |
-| zettelkasten[].links_to | 選填 | 跨書或跨領域的連結點（僅 permanent 類型建議填寫） |
-| meta_knowledge | ✅ | 可跨域遷移的思維模型，2-4 筆。每筆含 lens（模型名稱）、description（怎麼用）、delta（認知變化） |
-| key_concepts[].boundary | 選填 | 概念的適用條件與失效邊界（僅在概念有明確邊界時填寫） |
-| further_reading | ✅ | 延伸閱讀推薦。title 格式：「《中文書名》（原文）— 作者」，如「《窮查理的普通常識》（Poor Charlie's Almanack）— Charlie Munger」；無中文譯名則用原文 |
+## TIPS
 
-「選填」欄位在資訊不足時可省略；render-report.py 會自動處理空值。
+```json
+{
+  "tips_scores": {
+    "T": {"score": 2, "status": "assessed", "reason": "有方法，但需自行轉化。"},
+    "I": {"score": 2, "status": "assessed", "reason": "提供可辨識的新觀點。"},
+    "P": {"score": null, "status": "unknown", "reason": "未提供讀者情境。"},
+    "S": {"score": null, "status": "not_applicable", "reason": "小說不以實證論證為目的。"}
+  }
+}
+```
+
+- `assessed`：`score` 必須為 1–3，並說明理由。
+- `unknown`、`not_applicable`：`score` 必須為 `null`，理由分別說明資訊不足或不適用。
+- 不產出 `total`、`verdict`，也不把未知或不適用換算成低分。
+
+## 引述
+
+直接引述把原文、翻譯與位置分開：
+
+```json
+{
+  "quote_type": "direct",
+  "original_text": "Original wording",
+  "translation": "繁體中文翻譯；不需要時為 null",
+  "source_id": "src-book",
+  "location": "第二章／PDF 實際第 31 頁"
+}
+```
+
+轉述不能放進引號冒充原文：
+
+```json
+{
+  "quote_type": "paraphrase",
+  "paraphrase": "作者在此區分可逆與難以逆轉的決策。",
+  "source_id": "src-book",
+  "location": "第一章第一段"
+}
+```
+
+`quotes` 可以是空陣列，不為湊數生成引句。無法定位的文字不要當引述交付。
+
+## 選填內容與文學分支
+
+`actions`、`quotes`、`zettelkasten`、`meta_knowledge`、`further_reading` 可以為空。沒有讀者情境時，`actions` 只能是明確標示的候選應用；文學作品不強制產出工具、科學性分數或行動。
+
+`concept_relations` 使用結構化關係資料；renderer 負責產生安全 HTML，不接受任意模型生成的 SVG 或 script。
+
+renderer 會顯示的物件都要提供對應欄位；不要用相似但未定義的鍵名：
+
+```json
+{
+  "key_concepts": [
+    {"name": "概念", "definition": "白話定義", "boundary": "可省略的適用邊界"}
+  ],
+  "concept_relations": [
+    {"from": "概念 A", "relation": "限制", "to": "概念 B"}
+  ],
+  "actions": [
+    {
+      "title": "候選應用標題",
+      "description": "為何值得嘗試",
+      "when": "可省略的時間",
+      "context": "可省略的情境",
+      "action": "可省略的具體行為"
+    }
+  ],
+  "meta_knowledge": [
+    {"lens": "可遷移理解", "description": "連結機制", "delta": "可能改變的理解"}
+  ],
+  "zettelkasten": [
+    {
+      "type": "literature",
+      "concept": "一則一概念",
+      "reason": "為什麼重要",
+      "links_to": "可省略；要含連結機制與關鍵差異"
+    }
+  ],
+  "further_reading": [
+    {"title": "下一份材料", "reason": "與本報告的具體關係"}
+  ]
+}
+```
+
+`zettelkasten[].type` 可用 `fleeting`、`literature`、`permanent`。選填文字欄位可以省略，但若存在就必須是文字；必要顯示欄位不可用空字串。
+
+## 可執行範例
+
+以下 fixture 都必須通過 `--validate`，並與契約測試一起維護：
+
+- 非虛構完整報告：[`../tests/fixtures/nonfiction.json`](../tests/fixtures/nonfiction.json)
+- 只有書名的 preliminary：[`../tests/fixtures/preliminary.json`](../tests/fixtures/preliminary.json)
+- 文學完整報告：[`../tests/fixtures/literature.json`](../tests/fixtures/literature.json)

@@ -1,0 +1,34 @@
+{
+  "slug": "title-only",
+  "book_title": "不存在的管理學：藍色週四",
+  "book_author": null,
+  "book_type_tag": "書名初步評估",
+  "report_mode": "preliminary",
+  "reading_lens": "nonfiction",
+  "one_line_review": "目前只有書名，不能判斷內容或是否值得讀。",
+  "book_introduction": "未取得全文或可回查的公開資料。",
+  "coverage": {
+    "requested_scope": "依書名判斷是否值得讀",
+    "read_locations": [],
+    "unread_locations": ["全書"],
+    "failed_locations": [],
+    "source_basis": ["none"],
+    "limitations": ["只有使用者提供的書名"]
+  },
+  "sources": [],
+  "tips_scores": {
+    "T": {"score": null, "status": "unknown", "reason": "未取得內容。"},
+    "I": {"score": null, "status": "unknown", "reason": "未取得內容。"},
+    "P": {"score": null, "status": "unknown", "reason": "未取得內容與讀者情境。"},
+    "S": {"score": null, "status": "unknown", "reason": "未取得論據。"}
+  },
+  "core_arguments": [],
+  "key_concepts": [],
+  "concept_relations": [],
+  "critical_perspectives": [],
+  "quotes": [],
+  "actions": [],
+  "zettelkasten": [],
+  "meta_knowledge": [],
+  "further_reading": []
+}

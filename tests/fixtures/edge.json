@@ -1,0 +1,65 @@
+{
+  "slug": "controlled-edge",
+  "book_title": "極端內容與窄螢幕閱讀測試：一個不應撐破版面的超長標題",
+  "book_author": "測試作者",
+  "book_type_tag": "合成壓力測試材料",
+  "report_mode": "full",
+  "reading_lens": "nonfiction",
+  "one_line_review": "長字串、表格與安全 HTML 都應保持可讀。",
+  "book_introduction": "這是 renderer 的合成邊界案例，不代表真實書籍分析。",
+  "coverage": {
+    "requested_scope": "合成材料全文",
+    "read_locations": ["第一節"],
+    "unread_locations": [],
+    "failed_locations": [],
+    "source_basis": ["full_text"],
+    "limitations": ["只驗證版面與資料呈現", "沒有外部研究"]
+  },
+  "sources": [
+    {
+      "id": "src-edge",
+      "type": "provided_text",
+      "title": "含有很長但可換行識別字 ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 的合成材料",
+      "edition": "測試版",
+      "locations": ["第一節第一段"],
+      "url": "https://example.com/reports/a-very-long-path-that-must-wrap-without-overflowing-the-reading-column/controlled-edge-case"
+    }
+  ],
+  "tips_scores": {
+    "T": {"score": 2, "status": "assessed", "reason": "可驗證長內容呈現。"},
+    "I": {"score": 1, "status": "assessed", "reason": "只提供有限的新觀點。"},
+    "P": {"score": null, "status": "unknown", "reason": "未提供讀者情境。"},
+    "S": {"score": null, "status": "not_applicable", "reason": "此案例只測介面。"}
+  },
+  "core_arguments": [
+    {
+      "title": "長內容不應破壞閱讀欄",
+      "body": "<p>允許的段落與 <strong>強調</strong> 應保留；不允許的標記應被移除。</p><table><thead><tr><th>檢查項目</th><th>預期結果</th><th>長說明</th></tr></thead><tbody><tr><td>窄螢幕</td><td>表格可局部捲動</td><td>ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789</td></tr><tr><td>一般文字</td><td>自然換行</td><td>閱讀欄寬度維持穩定，不讓整頁出現水平捲軸。</td></tr></tbody></table>",
+      "source_ids": ["src-edge"],
+      "analysis_type": "source_claim"
+    }
+  ],
+  "key_concepts": [
+    {"name": "局部捲動", "definition": "只有寬表格容器可以水平捲動。", "boundary": "整頁仍不得水平溢位。"}
+  ],
+  "concept_relations": [
+    {"from": "局部捲動", "relation": "保護", "to": "閱讀欄"}
+  ],
+  "critical_perspectives": [
+    {
+      "title": "可讀性不是內容品質",
+      "content": "版面通過不代表分析內容正確。",
+      "source_ids": ["src-edge"],
+      "analysis_type": "analyst_inference"
+    }
+  ],
+  "quotes": [
+    {"quote_type": "direct", "original_text": "只有表格需要局部水平捲動。", "source_id": "src-edge", "location": "第一節第一段"}
+  ],
+  "actions": [
+    {"title": "在 320px 與 200% 縮放檢查", "description": "確認頁面本身沒有水平溢位。", "when": "交付前", "context": "手機與桌面", "action": "檢查整頁水平溢位與表格局部捲動"}
+  ],
+  "zettelkasten": [],
+  "meta_knowledge": [],
+  "further_reading": []
+}

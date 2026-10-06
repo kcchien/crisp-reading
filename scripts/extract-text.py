@@ -21,6 +21,141 @@ import sys
 from pathlib import Path
 
 
+CONSERVATIVE_ANALYSIS_BUDGET = 80_000
+EXPLICIT_CAPACITY_FRACTION = 0.65
+
+
+def failed_result(error, backend=None, warnings=None):
+    result = {
+        "success": False,
+        "status": "failed",
+        "chunks": [],
+        "failed_ranges": [],
+        "error": str(error).strip() or "提取失敗",
+    }
+    if backend:
+        result["backend"] = backend
+    if warnings:
+        result["warnings"] = warnings
+    return result
+
+
+def complete_result(content, backend=None, warnings=None):
+    if not isinstance(content, str) or not content.strip():
+        return failed_result("提取器回傳空白內容", backend=backend, warnings=warnings)
+    result = {
+        "success": True,
+        "status": "complete",
+        "chunks": [],
+        "failed_ranges": [],
+        "content": content,
+    }
+    if backend:
+        result["backend"] = backend
+    if warnings:
+        result["warnings"] = warnings
+    return result
+
+
+def positive_int(value):
+    """argparse type for values that must be strictly positive."""
+    try:
+        parsed = int(value)
+    except (TypeError, ValueError) as exc:
+        raise argparse.ArgumentTypeError("必須是正整數") from exc
+    if parsed <= 0:
+        raise argparse.ArgumentTypeError("必須是正整數")
+    return parsed
+
+
+def _page_numbers_to_ranges(page_numbers):
+    if not page_numbers:
+        return []
+    ordered = sorted(set(page_numbers))
+    ranges = []
+    start = previous = ordered[0]
+    for page in ordered[1:]:
+        if page == previous + 1:
+            previous = page
+            continue
+        ranges.append(str(start) if start == previous else f"{start}-{previous}")
+        start = previous = page
+    ranges.append(str(start) if start == previous else f"{start}-{previous}")
+    return ranges
+
+
+def audit_pdf_page_coverage(input_path, pages=None):
+    """Verify that every requested PDF page has independently extractable text."""
+    try:
+        import pymupdf
+    except ImportError:
+        try:
+            import fitz as pymupdf
+        except ImportError:
+            return {
+                "verified": False,
+                "failed_ranges": [pages or "all"],
+                "warning": "缺少 pymupdf，無法驗證 PDF 逐頁完整性",
+            }
+
+    doc = None
+    try:
+        doc = pymupdf.open(str(input_path))
+        requested = parse_page_range(pages) if pages else list(range(len(doc)))
+        failed_pages = []
+        for page_index in requested:
+            if page_index < 0 or page_index >= len(doc):
+                failed_pages.append(page_index + 1)
+                continue
+            if not doc[page_index].get_text().strip():
+                failed_pages.append(page_index + 1)
+        return {"verified": True, "failed_ranges": _page_numbers_to_ranges(failed_pages)}
+    except Exception as exc:
+        return {
+            "verified": False,
+            "failed_ranges": [pages or "all"],
+            "warning": f"無法驗證 PDF 逐頁完整性：{exc}",
+        }
+    finally:
+        if doc is not None:
+            doc.close()
+
+
+def apply_pdf_page_audit(result, input_path, pages=None):
+    """Downgrade aggregate extraction when page coverage cannot be proven."""
+    if not result.get("success"):
+        return result
+    audit = audit_pdf_page_coverage(input_path, pages)
+    result["coverage_verified"] = audit["verified"]
+    failed_ranges = audit.get("failed_ranges") or []
+    if audit.get("warning"):
+        result.setdefault("warnings", []).append(audit["warning"])
+    if failed_ranges:
+        result["success"] = False
+        result["status"] = "partial"
+        result["failed_ranges"] = failed_ranges
+        result.setdefault("warnings", []).append("部分 PDF 頁面沒有可驗證的文字輸出")
+    return result
+
+
+def build_chunking_policy(estimated_tokens, usable_context_tokens=None):
+    """Plan chunking from usable capacity, not a model marketing context size."""
+    if usable_context_tokens is None:
+        budget = CONSERVATIVE_ANALYSIS_BUDGET
+        source = "conservative_default"
+    else:
+        if usable_context_tokens <= 0:
+            raise ValueError("usable_context_tokens 必須大於 0")
+        budget = max(1, int(usable_context_tokens * EXPLICIT_CAPACITY_FRACTION))
+        source = "explicit"
+    return {
+        "analysis_budget_tokens": budget,
+        "capacity_source": source,
+        "needs_chunking": estimated_tokens > budget,
+        "suggested_chunks": max(1, -(-estimated_tokens // budget)),
+    }
+
+
 def find_gateway():
     """尋找 document-to-markdown 的 gateway.py"""
     candidates = [
@@ -49,9 +184,14 @@ def extract_via_gateway(gateway_path, input_path, pages=None, output_path=None):
     # 一律讓 gateway 輸出到 stdout，由本腳本處理寫入
     cmd.extend(["--output", "-"])
 
-    result = subprocess.run(cmd, capture_output=True, text=True, timeout=300)
+    try:
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=300)
+    except subprocess.TimeoutExpired:
+        return failed_result("document-to-markdown gateway 提取逾時", backend="gateway")
+    except OSError as exc:
+        return failed_result(f"無法啟動 document-to-markdown gateway：{exc}", backend="gateway")
     if result.returncode != 0:
-        return {"success": False, "error": result.stderr or "gateway failed"}
+        return failed_result(result.stderr or "gateway failed", backend="gateway")
 
     content = result.stdout
     # gateway 可能輸出 JSON 或直接輸出 markdown
@@ -60,14 +200,17 @@ def extract_via_gateway(gateway_path, input_path, pages=None, output_path=None):
         if data.get("success"):
             content = data.get("content", "")
         else:
-            return {"success": False, "error": data.get("error", "gateway returned failure")}
+            return failed_result(data.get("error", "gateway returned failure"), backend="gateway")
     except json.JSONDecodeError:
         pass  # 直接是 markdown，使用 content as-is
 
+    extracted = complete_result(content, backend="gateway")
+    if not extracted["success"]:
+        return extracted
     if output_path:
         Path(output_path).write_text(content, encoding="utf-8")
-        return {"success": True, "output_path": output_path}
-    return {"success": True, "content": content}
+        extracted["output_path"] = output_path
+    return extracted
 
 
 def extract_via_pymupdf(input_path, pages=None):
@@ -75,13 +218,11 @@ def extract_via_pymupdf(input_path, pages=None):
     try:
         import pymupdf4llm
     except ImportError:
-        return {
-            "success": False,
-            "error": (
-                "需要安裝 pymupdf4llm：pip install pymupdf4llm\n"
-                "或安裝 document-to-markdown skill 以獲得完整功能。"
-            ),
-        }
+        return failed_result(
+            "需要安裝 pymupdf4llm：pip install pymupdf4llm\n"
+            "或安裝 document-to-markdown skill 以獲得完整功能。",
+            backend="pymupdf4llm",
+        )
 
     kwargs = {}
     if pages:
@@ -90,9 +231,45 @@ def extract_via_pymupdf(input_path, pages=None):
 
     try:
         text = pymupdf4llm.to_markdown(str(input_path), **kwargs)
-        return {"success": True, "content": text}
+        return complete_result(text, backend="pymupdf4llm")
     except Exception as e:
-        return {"success": False, "error": str(e)}
+        return failed_result(str(e), backend="pymupdf4llm")
+
+
+def extract_document(input_path, pages=None, output_path=None, gateway_path=None):
+    """Extract with an honest fallback boundary for the input format."""
+    input_path = Path(input_path)
+    gateway_error = None
+    if gateway_path:
+        gateway_result = extract_via_gateway(gateway_path, input_path, pages=pages)
+        if gateway_result["success"]:
+            result = gateway_result
+        else:
+            gateway_error = gateway_result["error"]
+            if input_path.suffix.lower() != ".pdf":
+                return failed_result(gateway_error, backend="gateway")
+            result = extract_via_pymupdf(input_path, pages=pages)
+            if result["success"]:
+                result.setdefault("status", "complete")
+                result.setdefault("backend", "pymupdf4llm")
+                result["warnings"] = [gateway_error]
+            else:
+                return failed_result(
+                    f"gateway: {gateway_error}; pymupdf4llm: {result['error']}",
+                    warnings=[gateway_error, result["error"]],
+                )
+    elif input_path.suffix.lower() == ".pdf":
+        result = extract_via_pymupdf(input_path, pages=pages)
+    else:
+        return failed_result("EPUB 需要可用的 document-to-markdown gateway")
+
+    if input_path.suffix.lower() == ".pdf":
+        result = apply_pdf_page_audit(result, input_path, pages)
+
+    if result.get("content") and output_path:
+        Path(output_path).write_text(result["content"], encoding="utf-8")
+        result["output_path"] = str(output_path)
+    return result
 
 
 def parse_page_range(pages_str):
@@ -108,7 +285,7 @@ def parse_page_range(pages_str):
     return sorted(set(result))
 
 
-def get_pdf_info(input_path):
+def get_pdf_info(input_path, usable_context_tokens=None):
     """取得 PDF 基本資訊"""
     try:
         import pymupdf
@@ -118,31 +295,37 @@ def get_pdf_info(input_path):
         except ImportError:
             return {"success": False, "error": "需要安裝 pymupdf：pip install pymupdf4llm"}
 
-    doc = pymupdf.open(str(input_path))
-    info = doc.metadata or {}
-    page_count = len(doc)
-    file_size = os.path.getsize(input_path)
+    doc = None
+    try:
+        doc = pymupdf.open(str(input_path))
+        info = doc.metadata or {}
+        page_count = len(doc)
+        file_size = os.path.getsize(input_path)
 
-    # 估算文字量（前中後分散取樣，避免封面/空白頁偏差）
-    if page_count <= 10:
-        sample_indices = list(range(page_count))
-    else:
-        # 跳過前 3 頁（封面/版權），從前段、中段、後段各取樣
-        front = list(range(3, min(8, page_count)))
-        mid_start = page_count // 2 - 2
-        middle = list(range(max(mid_start, 0), min(mid_start + 5, page_count)))
-        back_start = max(page_count - 8, 0)
-        back = list(range(back_start, page_count - 1))  # 跳過最後一頁（常為空白）
-        sample_indices = sorted(set(front + middle + back))
-    sample_count = len(sample_indices)
-    total_chars = sum(len(doc[i].get_text()) for i in sample_indices)
-    avg_chars_per_page = total_chars / sample_count if sample_count > 0 else 0
-    estimated_chars = int(avg_chars_per_page * page_count)
-    # 粗估 token（中文約 1.5 字/token，英文約 4 字/token，取平均 2.5）
-    estimated_tokens = int(estimated_chars / 2.5)
+        # 估算文字量（前中後分散取樣，避免封面/空白頁偏差）
+        if page_count <= 10:
+            sample_indices = list(range(page_count))
+        else:
+            # 跳過前 3 頁（封面/版權），從前段、中段、後段各取樣
+            front = list(range(3, min(8, page_count)))
+            mid_start = page_count // 2 - 2
+            middle = list(range(max(mid_start, 0), min(mid_start + 5, page_count)))
+            back_start = max(page_count - 8, 0)
+            back = list(range(back_start, page_count - 1))  # 跳過最後一頁（常為空白）
+            sample_indices = sorted(set(front + middle + back))
+        sample_count = len(sample_indices)
+        total_chars = sum(len(doc[i].get_text()) for i in sample_indices)
+        avg_chars_per_page = total_chars / sample_count if sample_count > 0 else 0
+        estimated_chars = int(avg_chars_per_page * page_count)
+        # 粗估 token（中文約 1.5 字/token，英文約 4 字/token，取平均 2.5）
+        estimated_tokens = int(estimated_chars / 2.5)
+    except Exception as exc:
+        return failed_result(f"無法讀取 PDF 資訊：{exc}", backend="pymupdf")
+    finally:
+        if doc is not None:
+            doc.close()
 
-    doc.close()
-
+    policy = build_chunking_policy(estimated_tokens, usable_context_tokens)
     return {
         "success": True,
         "title": info.get("title", ""),
@@ -151,8 +334,7 @@ def get_pdf_info(input_path):
         "file_size_mb": round(file_size / 1024 / 1024, 1),
         "estimated_chars": estimated_chars,
         "estimated_tokens": estimated_tokens,
-        "needs_chunking": estimated_tokens > 80000,
-        "suggested_chunks": max(1, -(-estimated_tokens // 60000)),  # 無條件進位
+        **policy,
     }
 
 
@@ -166,9 +348,15 @@ def get_toc(input_path):
         except ImportError:
             return {"success": False, "error": "需要安裝 pymupdf：pip install pymupdf4llm"}
 
-    doc = pymupdf.open(str(input_path))
-    toc = doc.get_toc()
-    doc.close()
+    doc = None
+    try:
+        doc = pymupdf.open(str(input_path))
+        toc = doc.get_toc()
+    except Exception as exc:
+        return failed_result(f"無法讀取 PDF 目錄：{exc}", backend="pymupdf")
+    finally:
+        if doc is not None:
+            doc.close()
 
     if not toc:
         return {"success": True, "toc": [], "note": "此 PDF 無內嵌目錄"}
@@ -182,6 +370,8 @@ def get_toc(input_path):
 
 def chunk_extract(input_path, chunk_size, output_dir, gateway_path=None):
     """分塊提取 PDF，每塊 chunk_size 頁"""
+    if not isinstance(chunk_size, int) or isinstance(chunk_size, bool) or chunk_size <= 0:
+        return failed_result("--chunk-size 必須是正整數")
     info = get_pdf_info(input_path)
     if not info["success"]:
         return info
@@ -196,19 +386,49 @@ def chunk_extract(input_path, chunk_size, output_dir, gateway_path=None):
         pages = f"{start}-{end}"
         chunk_file = output_dir / f"chunk_{start:04d}-{end:04d}.md"
 
-        if gateway_path:
-            result = extract_via_gateway(
-                gateway_path, input_path, pages=pages, output_path=str(chunk_file)
-            )
-        else:
-            result = extract_via_pymupdf(input_path, pages=pages)
-            if result["success"] and "content" in result:
-                chunk_file.write_text(result["content"], encoding="utf-8")
-                result["output_path"] = str(chunk_file)
+        result = extract_document(
+            input_path,
+            pages=pages,
+            output_path=str(chunk_file),
+            gateway_path=gateway_path,
+        )
+        chunk_status = result.get("status", "complete" if result.get("success") else "failed")
+        chunk = {
+            "pages": pages,
+            "file": str(chunk_file),
+            "success": chunk_status == "complete",
+            "status": chunk_status,
+        }
+        if result.get("backend"):
+            chunk["backend"] = result["backend"]
+        if result.get("failed_ranges"):
+            chunk["failed_ranges"] = result["failed_ranges"]
+        if result.get("error"):
+            chunk["error"] = result["error"]
+        if result.get("warnings"):
+            chunk["warnings"] = result["warnings"]
+        chunks.append(chunk)
 
-        chunks.append({"pages": pages, "file": str(chunk_file), "success": result["success"]})
-
-    return {"success": True, "chunks": chunks, "total_pages": page_count}
+    failed_ranges = []
+    for chunk in chunks:
+        if chunk["status"] == "complete":
+            continue
+        failed_ranges.extend(chunk.get("failed_ranges") or [chunk["pages"]])
+    if not chunks:
+        return failed_result("PDF 沒有可提取的頁面")
+    if not failed_ranges:
+        status = "complete"
+    elif all(chunk["status"] == "failed" for chunk in chunks):
+        status = "failed"
+    else:
+        status = "partial"
+    return {
+        "success": status == "complete",
+        "status": status,
+        "chunks": chunks,
+        "failed_ranges": failed_ranges,
+        "total_pages": page_count,
+    }
 
 
 def main():
@@ -218,8 +438,13 @@ def main():
     parser.add_argument("--output", "-o", help="輸出檔案路徑（預設 stdout）")
     parser.add_argument("--toc", action="store_true", help="僅提取目錄結構（JSON）")
     parser.add_argument("--info", action="store_true", help="僅顯示書籍資訊（JSON）")
-    parser.add_argument("--chunk-size", type=int, help="分塊頁數，自動切割並輸出到目錄")
+    parser.add_argument("--chunk-size", type=positive_int, help="分塊頁數，自動切割並輸出到目錄")
     parser.add_argument("--output-dir", help="分塊輸出目錄（搭配 --chunk-size）")
+    parser.add_argument(
+        "--usable-context-tokens",
+        type=int,
+        help="宿主實際可供本次分析使用的 token 容量；未知時採保守預設",
+    )
     args = parser.parse_args()
 
     input_path = Path(args.input).resolve()
@@ -258,8 +483,9 @@ def main():
                 "error": f"--info 僅支援 PDF 格式。EPUB 請先提取文字後自行評估大小。",
             }, ensure_ascii=False), file=sys.stderr)
             sys.exit(1)
-        print(json.dumps(get_pdf_info(input_path), ensure_ascii=False, indent=2))
-        return
+        result = get_pdf_info(input_path, args.usable_context_tokens)
+        print(json.dumps(result, ensure_ascii=False, indent=2))
+        sys.exit(0 if result.get("success") else 1)
 
     # 目錄模式（僅 PDF 支援）
     if args.toc:
@@ -269,21 +495,24 @@ def main():
                 "error": f"--toc 僅支援 PDF 格式。",
             }, ensure_ascii=False), file=sys.stderr)
             sys.exit(1)
-        print(json.dumps(get_toc(input_path), ensure_ascii=False, indent=2))
-        return
+        result = get_toc(input_path)
+        print(json.dumps(result, ensure_ascii=False, indent=2))
+        sys.exit(0 if result.get("success") else 1)
 
     # 分塊模式
     if args.chunk_size:
         output_dir = args.output_dir or str(input_path.parent / f"{input_path.stem}_chunks")
         result = chunk_extract(input_path, args.chunk_size, output_dir, gateway_path)
         print(json.dumps(result, ensure_ascii=False, indent=2))
-        return
+        sys.exit(0 if result.get("status") == "complete" else 2 if result.get("status") == "partial" else 1)
 
     # 一般提取
-    if gateway_path:
-        result = extract_via_gateway(gateway_path, input_path, pages=args.pages, output_path=args.output)
-    else:
-        result = extract_via_pymupdf(input_path, pages=args.pages)
+    result = extract_document(
+        input_path,
+        pages=args.pages,
+        output_path=args.output,
+        gateway_path=gateway_path,
+    )
 
     if not result["success"]:
         print(json.dumps(result, ensure_ascii=False), file=sys.stderr)
@@ -291,7 +520,9 @@ def main():
 
     if args.output and "content" in result:
         Path(args.output).write_text(result["content"], encoding="utf-8")
-        print(json.dumps({"success": True, "output_path": args.output}, ensure_ascii=False))
+        payload = {key: value for key, value in result.items() if key != "content"}
+        payload["output_path"] = args.output
+        print(json.dumps(payload, ensure_ascii=False))
     elif "content" in result:
         print(result["content"])
     else:

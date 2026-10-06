@@ -1,220 +1,166 @@
 ---
 name: crisp-reading
-description: >
-  CRISP Reading — AI 深度閱讀夥伴。Comprehend · Review · Internalize · Synthesize · Practice。
-  整合 Adler 分析閱讀、樊登 TIPS 拆書法、RIA 拆書幫、
-  Zettelkasten、費曼技巧、Self-Explanation、Steel-Manning。
-  分析書籍並產出互動式 HTML 閱讀報告。
-  Use when: (1) 使用者提到「讀這本書」「分析這本書」「幫我讀」「這本書值不值得讀」
-  "analyze this book" "book review" "book summary" "reading notes"
-  "what's this book about" "deep reading",
-  (2) 要求書籍評估、讀書筆記、閱讀報告,
-  (3) 提到 CRISP、CRISP Reading、深度閱讀。
-  Not for: 純粹的文件摘要（沒有閱讀意圖的「幫我總結這篇」）、
-  學術論文的系統性文獻回顧（Systematic Review）、速讀技巧訓練。
+description: "CRISP Reading：AI 深度閱讀夥伴，整合 Adler 分析閱讀、拆書法、Zettelkasten、費曼技巧，分析書籍並產出互動式 HTML 閱讀報告。觸發：讀這本書、分析這本書、這本書值不值得讀、book review、reading notes、深度閱讀。"
 ---
 
 # CRISP Reading
 
-你的 AI 深度閱讀夥伴。把一本書拆解、理解、批判、內化，產出一份互動式 HTML 閱讀報告。
+把書籍材料轉成可核對的繁體中文閱讀報告。先確認使用者要什麼與實際掌握哪些材料，再決定分析強度；完整度服從證據，不用版面或流暢文字掩蓋缺漏。
 
-## 架構：Claude 只思考，腳本處理格式
+CRISP 是五個依序檢查的內部完成關卡：**Comprehend** 理解問題、材料與結構，**Review** 審視主張、證據與其他解釋，**Internalize** 用白話重建並連到已知讀者情境，**Synthesize** 整合跨章關係與可遷移知識，**Practice** 判斷適用性、取捨與下一步。它們共同形成既有報告欄位，不是五個固定的使用者可見章節；材料或情境不足時，相應關卡降低強度或停止。
 
-```
-路徑 A：PDF/EPUB → extract-text.py → 純文字 ─┐
-路徑 B：僅書名 → Gutendex API → TXT 下載 ───┤→ Claude 分析 → JSON → render-report.py → HTML
-路徑 C：僅書名（書庫無結果）→ 依公開資料 ──┘
-```
+除非使用者明確要求說明方法，使用者可見內容不得列出 C／R／I／S／P、五階段名稱、啟停狀態、完成關卡、內部方法名稱，或「依 schema／契約／規則所以選擇某模式」等流程自述；只呈現實際已讀、未讀、能支持的判斷與限制。
 
-- **Claude 負責**：閱讀理解、批判分析、結構化思考 → 輸出分析 JSON
-- **腳本負責**：文字提取（extract-text.py）、HTML 模板填充（render-report.py），模板由腳本處理，不載入 context
-- **JSON 是內部中間格式**：Claude 產出 JSON 後直接傳給 render-report.py，使用者不需要也不會拿到 JSON 檔案
+## 適用與退場
 
-## 運作流程
+適用於書籍評估、完整或指定範圍閱讀、讀書筆記深化、閱讀報告，以及使用者明確提到 CRISP Reading。
 
-### 決策矩陣：根據輸入決定路徑
+以下情況退場，不啟動完整 CRISP：
 
-| 輸入 | 走哪些步驟 | 產出 |
-|------|-----------|------|
-| 有 PDF/EPUB | 一～五步全部 | HTML 報告 |
-| 有 PDF/EPUB + 使用者已有筆記 | 先讀筆記，再走一～五步 | HTML 報告 |
-| 僅書名 | 嘗試公開書庫取書 → 若取得全文走一～五步；否則第四～五步（依公開資料） | HTML 報告 |
+- 只有「摘要這份文件」而沒有書籍閱讀、評估或內化意圖的純文件摘要。
+- 學術論文的系統性文獻回顧。
+- 速讀技巧訓練。
 
-**所有路徑一律走完全流程，產出 HTML 報告。**
+若輸入看似一本書但使用者只要求摘要，完成摘要即可；不要自行擴成深度閱讀專案。
 
-### 第一步：環境準備
+## 先判斷模式
 
-確認 pymupdf4llm 可用（extract-text.py 的唯一必要依賴）：
+| 使用者意圖與材料 | `report_mode` | 處理方式 | 預設交付 |
+|---|---|---|---|
+| 「幫我讀這本書」並提供可讀全文 | `full` | 完整深讀要求範圍 | HTML |
+| 指定章節或頁面 | `full` | 完整分析指定範圍；coverage 明列範圍外內容 | HTML |
+| 「值不值得讀」「快速評估」 | `quick` | 精簡評估；不為湊完整而延伸 | 精簡 HTML；明確不要 HTML 時依指示 |
+| 已有讀書筆記，要求整理或深化 | `notes` | 以筆記為主，必要時回查提供的原文 | HTML |
+| 只有書名，沒有可讀全文 | `preliminary` | 先嘗試合法可用全文；仍無全文時只做初步評估 | HTML，清楚標示來源範圍 |
+
+部分提取不是完整閱讀。提取結果為 `partial` 或 `failed` 時，先交代缺漏；只有使用者接受縮小範圍，才依已成功位置繼續。
+
+階段深度由模式與閱讀 lens 決定：
+
+| 情境 | 內部處理深度 |
+|---|---|
+| `full` + `nonfiction` | 完成五個關卡；Practice 仍受讀者情境限制 |
+| `full` + `literature` | 以 Comprehend、Internalize、Synthesize 為主；Review 檢查文本依據與其他可成立讀法；Practice 可空 |
+| `full` + `mixed` | 論證內容按非虛構標準 Review，敘事內容按文學標準 Review，最後在 Synthesize 合流 |
+| `notes` | 保留讀者原判斷與疑問，再補材料界線、理解缺口、挑戰與連結 |
+| `quick` | 做到足以回答是否值得讀的 Comprehend 與 Review；其他關卡只在已有材料支持時精簡處理 |
+| `preliminary` | 以材料盤點與可核對書目為主；不能完成的關卡明確停下 |
+| 提取 `partial`／`failed` | 先縮小範圍或降低模式，再依成功位置處理，不以五階段名稱掩蓋缺口 |
+
+## 不可跨越的證據界線
+
+1. 只有實際讀到的材料才算已讀。模型既有知識不是已查閱的公開資料。
+2. `coverage` 要列出要求範圍、已讀、未讀、失敗位置、依據類型與限制。
+3. 來源主張連到可回查的 `source_id`；分析者推論要明示，不冒充作者原意。
+4. 直接引句必須有原文與位置；轉述明標為轉述。找不到位置就不要當引句交付。
+5. 不虛構版本、頁碼、章節、外部來源、讀者經驗或個人化效果。
+6. 缺少來源、範圍或必要欄位時讓契約拒絕，不補造相容資料。
+7. 未讀章節只能標示未確認與需要何種材料；即使使用「可能」「也許」或保留語氣，也不得猜測該章內容、功能或會解決什麼問題。
+
+## 工作流程
+
+### 1. 盤點材料與能力
+
+- 確認輸入類型、要求範圍、可定位方式與使用者是否提供情境。
+- 依要執行的功能檢查可用能力，不以檔案存在推定後端可用。
+- PDF/EPUB 內容提取優先使用能成功啟動的文件轉 Markdown 能力；PDF 才能在該路徑失敗時改用 `pymupdf4llm`。
+- PDF 的 `--info`、`--toc` 需要 PyMuPDF；EPUB 使用章節標題、檔案路徑或 CFI，不硬套 PDF 頁碼。
+- 圖表或掃描頁需要影像閱讀能力；無法讀取就記入失敗範圍與影響。
+
+缺能力時說明具體缺口與仍可行的選項。只有另一條路徑已確認可用時才自動回退。
+
+### 2. 提取與長文處理
+
+已知宿主本次可用容量時明列；未知就由腳本採保守預設，不用模型標稱 context 推測可用容量。
 
 ```bash
-pip install pymupdf4llm  # 若尚未安裝
-```
-
-### 第二步：評估書籍大小
-
-使用者提供 PDF 時，先執行：
-
-```bash
-python scripts/extract-text.py book.pdf --info
-```
-
-輸出範例：
-```json
-{
-  "title": "The Almanack of Naval Ravikant",
-  "page_count": 242,
-  "estimated_tokens": 95000,
-  "needs_chunking": true,
-  "suggested_chunks": 2
-}
-```
-
-### 第三步：文字提取（依大小決定策略）
-
-**小型書籍**（estimated_tokens < 80,000）：一次提取全書
-
-```bash
+python scripts/extract-text.py book.pdf --info --usable-context-tokens 120000
 python scripts/extract-text.py book.pdf -o book.md
 ```
 
-**大型書籍**（estimated_tokens ≥ 80,000）：分批處理
+需要分塊時先取得目錄，再依可回查範圍提取：
 
 ```bash
-# 1. 先提取目錄
 python scripts/extract-text.py book.pdf --toc
-
-# 2. 根據目錄結構，按章節分批提取
-python scripts/extract-text.py book.pdf --pages 1-50 -o part1.md
-python scripts/extract-text.py book.pdf --pages 51-120 -o part2.md
-# ...或自動分塊：
 python scripts/extract-text.py book.pdf --chunk-size 50 --output-dir ./chunks
 ```
 
-**大型書籍的分析策略**：
-1. 先讀目錄 + 前言 + 結論（掌握全貌），完成 TIPS 評分
-2. 分批讀取章節，每批產出局部分析筆記（論點、概念、引句、批判）
-3. 全部章節讀完後，整合所有局部筆記，合併重複概念、統一論點層次、補充跨章節的批判視角
-4. 產出一份完整 JSON（不是多份拼接，而是整合後的單一結構）
+每批筆記保留來源位置、關鍵定義、論點、反證、未解問題及無法讀取的內容。整合時回查關鍵原文，重建跨章關係與矛盾，不把多份摘要直接拼接。
 
-**腳本失敗時的回退**：告知使用者原因，建議替代方案（提供解鎖版 PDF、安裝 pymupdf4llm、或改用書名模式）。EPUB 檔案需要 document-to-markdown skill 的 gateway.py；若不可用，請使用者轉換為 PDF 或改用書名模式。
+提取回傳 `status: complete|partial|failed`、`success`、`chunks` 與 `failed_ranges`。只有要求範圍全數成功且內容非空白，`success` 才能是 `true`。
 
-### 書名模式：嘗試從公開書庫取得全文（選用）
+### 3. 僅書名時尋找可合法使用的全文
 
-僅輸入書名時，嘗試從公開領域書庫搜尋全文。此步驟為選用，取得全文時提升分析品質。
+需要時載入 [references/ebook-library.md](references/ebook-library.md)。使用原始書名搜尋公共領域書庫，核對書名、作者與版本；不要自行翻譯或拼音化後把相似結果當同一本書。
 
-**搜尋策略**（Gutendex API）：
-- 中文書名：加 `languages=zh` 參數 → `https://gutendex.com/books?languages=zh&search={中文書名}`
-- 英文書名：直接搜尋 → `https://gutendex.com/books?search={英文書名}`
-- **嚴禁自行翻譯書名再搜尋**（例如把「老殘遊記」翻成 "lao can travels"），直接用原始書名搜尋
-- 備選：Standard Ebooks `https://standardebooks.org/ebooks?query={書名}`（僅英文書）
+找到全文才進入相應範圍的完整分析。沒有全文時改為 `preliminary`：
 
-**流程**：
-1. 用 WebFetch 搜尋 Gutendex API（中文書記得加 `languages=zh`）
-2. 若找到匹配結果，下載 TXT 格式（優先 `text/plain; charset=utf-8`）
-3. 用 extract-text.py 提取文字（或直接讀取 TXT）
-4. 進入標準分析流程（第二～五步）
-5. HTML 報告標註：「書籍來源：Project Gutenberg（公共領域版本）」
+- 查閱到的書目或出版資料列為 `public_metadata`。
+- 沒有實際查閱資料時使用 `none`。
+- 不生成逐章細節、引句或完整閱讀結論。
 
-**限制與回退**：
-- 公開書庫僅收錄公共領域書籍（多為 1928 年前出版）
-- 搜尋無結果 → 回退到「依公開資料」模式，不阻塞流程
-- WebFetch 不可用 → 直接跳過，走「僅書名」標準路徑
-- 不強制：若使用者明確說「不需要下載」或「用你的知識就好」，跳過此步驟
+### 4. 選擇閱讀分支並完成 CRISP 分析
 
-詳細書庫清單與 API 用法見 [references/ebook-library.md](references/ebook-library.md)。
+進入分析前載入 [references/analysis.md](references/analysis.md)，依 Comprehend → Review → Internalize → Synthesize → Practice 完成內部分析，再把結果映射到既有 JSON 欄位。各關卡的詳細工作與完成條件以該參考檔為準。
 
-### 第四步：Claude 分析 → 輸出 JSON
+- `nonfiction`：結構、論點、證據、假設、替代解釋與適用邊界。
+- `literature`：敘事結構、人物、語言、意象、主題與其他可成立的詮釋；不強套科學性或行動。
+- `mixed`：分開處理論證與文學性內容，不用同一標準硬評全部段落。
 
-Claude 讀取提取後的文字，執行分析流程（見下方），最終產出分析 JSON 檔案。JSON 結構定義見 [references/json-schema.md](references/json-schema.md)。
+重要反例、矛盾或限制不受固定篇幅與項目數排除。事實查核與公眾評價是不同工作：前者核對可驗證主張，後者整理讀者或評論界反應；公眾評價只在使用者明確要求時執行。
 
-### 第五步：渲染 HTML 報告
+後一關不能用流暢文字補回前一關缺少的基礎。沒有可核對材料時，不生成跨章合成；沒有讀者情境時，不生成個人化 Practice；無法完成的關卡要反映在 coverage、限制或空的 optional 欄位。
+
+### 5. 產出並驗證資料
+
+產出 JSON 前載入 [references/json-schema.md](references/json-schema.md)，保留 JSON 檔案或 stdin 入口，先驗證再渲染：
 
 ```bash
+python scripts/render-report.py analysis.json --validate
 python scripts/render-report.py analysis.json -o reading-report-{slug}.html
 ```
 
-腳本讀取 JSON、套用 HTML 模板、輸出完整報告。零 token 消耗。
+驗證失敗就修正資料，不輸出半成品 HTML。HTML 模板由 renderer 載入；正常分析不需讀模板。只有修改 UI 時才載入 [references/design-spec.md](references/design-spec.md)。
 
-## 分析流程（內部）
+### 6. 檢查實際交付
 
-> 使用者不需要知道階段名稱。按以下順序執行：
+- 頁首可看出模式、閱讀範圍與限制。
+- 論點、引述與來源可互相回查。
+- optional section 沒有內容時不顯示空標題。
+- TIPS 狀態與理由沒有在 HTML、Markdown 或列印中遺失。
+- 完整 HTML 可離線閱讀；必要時實際開啟、匯出或列印檢查。
 
-1. **評估**：TIPS 四維度快速評分（見下方速查表），作為評價指標顯示在報告中
-2. **結構解析**：萃取全書骨架、核心提問、主論點、論證架構
-3. **深度分析**：Adler 四問 + 樊登四問、底層假設萃取、Self-Explanation、思維模型萃取與認知差距捕捉
-4. **批判評估**：Adler 三類反對、Steel-Manning、品質評估六維度
-5. **外部驗證**（選用）：僅在使用者明確要求時才用 WebSearch 搜尋公眾討論
-6. **內化與行動**：Zettelkasten 三層筆記結構、行動承諾（三要素）
-7. **產出 JSON**：將分析結果結構化為 JSON，交由 render-report.py 渲染
+## TIPS 四維度
 
-各階段詳細方法論見 `references/analysis.md`；HTML 設計規範見 `references/design-spec.md`。
+每個維度獨立呈現，不加總、不映射固定好書等級：
 
-## TIPS 四維度評分速查
+| 維度 | 代號 | 判斷問題 |
+|---|---|---|
+| 工具性 | T | 是否提供可執行、可檢驗的方法 |
+| 啟發性 | I | 相對已知背景，是否帶來新的理解角度 |
+| 實用性 | P | 對已知讀者情境是否有幫助 |
+| 科學性 | S | 可驗證主張的證據與推論品質如何 |
 
-每個維度 1-3 分。TIPS 評分作為書籍評價指標，顯示於 HTML 報告中，不影響分析深度——所有書籍一律執行完整深度分析。
+`assessed` 使用 1–3 分並附理由；資訊不足用 `unknown`，不適用用 `not_applicable`，兩者 `score` 都是 `null`。未提供讀者背景時，P 通常是 `unknown`；無法判斷相對新穎性時，I 也可以是 `unknown`。文學作品的 S 可以是 `not_applicable`。
 
-| 維度 | 代號 | 定義 |
-|------|------|------|
-| 工具性（Toolability） | T | 書中的方法能不能直接拿來用 |
-| 啟發性（Inspirability） | I | 讀完會不會改變思考方式 |
-| 實用性（Practicality） | P | 對讀者當前處境有沒有幫助 |
-| 科學性（Scientificity） | S | 論據是否經得起推敲 |
+## 個人化、筆記與應用
 
-**評分速查**：
-- **1 分**：T 沒有可操作方法 / I 大多已知常識 / P 與讀者關聯低 / S 靠個人經驗或軼事
-- **2 分**：T 有方法但需自己轉化 / I 有新穎觀點 / P 部分可應用 / S 有一定證據但不系統
-- **3 分**：T 提供現成工具流程 / I 根本性挑戰認知 / P 直接解決當前問題 / S 證據充分邏輯嚴謹
+- 有讀者情境時才能把應用連到其實際目標或限制。
+- 沒有讀者情境時，只有在適用條件、主要成本與風險都能由材料界定時，才提供明確標示的候選應用；否則 actions 留空。不能宣稱讀者已內化、承諾、會受益，或未經依據就把行動稱為低成本、低風險、可逆。
+- 已有筆記時先保留原判斷與疑問，再補來源、替代解釋與跨章關係，不重頭覆寫。
+- 知識連結要說明連結機制與關鍵差異；只有書名相似或泛泛「相關」不構成連結。
 
-**總分解讀**：
+## 多語言與譯名
 
-| 總分 | 意義 |
-|------|------|
-| 4-5 | 一般 |
-| 6-8 | 好書 |
-| 9-12 | 非常值得深讀 |
+預設輸出繁體中文，原文引句保留並可附翻譯。書名、作者或延伸閱讀的繁體中文譯名只有在需要使用且能透過公開搜尋能力找到台灣出版品或可靠來源時才採用；否則保留原文，不靠記憶猜測或自行音譯。
 
-## 核心不變量
+## 參考檔案載入
 
-1. **來源誠實** — 確認確實掌握書籍內容才開始分析。僅憑書名時，不確定的部分明確標示「依公開資料判斷」，絕不編造細節
-2. **方法論不外露** — 使用者永遠不會看到 Phase 編號、JSON 結構、方法論名稱（如 Adler、Zettelkasten）。TIPS 評分數字會顯示在 HTML 報告中
-3. **批判不缺席** — 證據越薄弱批判越深，但一律用自然語言表達
-4. **行動要具體** — 時間 + 對象 + 具體行動，缺一不可
-5. **留白引思考** — 報告中主動留下開放式提問，引導讀者形成自己的判斷，而非給出定論
+| 需求 | 載入 |
+|---|---|
+| 產出 JSON | [references/json-schema.md](references/json-schema.md) |
+| 進行分析 | [references/analysis.md](references/analysis.md) |
+| 僅書名且要找全文 | [references/ebook-library.md](references/ebook-library.md) |
+| 修改 HTML 或 UI | [references/design-spec.md](references/design-spec.md) |
 
-## 特殊情境處理
-
-- **部分閱讀**：針對已讀部分分析，未讀部分標記為待補，不猜測
-- **多語言書籍**：始終用繁體中文輸出；引述原文時附中文翻譯。目標讀者為繁體中文使用者，書名處理規則：
-  - 英文書有中文譯名 → 中文書名（原文書名），例：「大亨小傳（The Great Gatsby）」
-  - 英文書無中文譯名 → 直接用原文書名
-  - 中文書 → 直接用中文書名
-  - 延伸閱讀書單同理：「《窮查理的普通常識》（Poor Charlie's Almanack）— Charlie Munger」
-- **作者命名規則**：英文或原文作者，有公認中文譯名者以「中文譯名（原文名）」格式呈現，例如「法蘭西斯·史考特·費茲傑羅（F. Scott Fitzgerald）」；若無公認中文譯名則直接用原文
-- **翻譯查證規則（強制）**：書名和作者的繁體中文譯名**必須**透過 WebSearch 查證，確認為台灣出版界或公認的標準譯名後才可使用。**嚴禁憑記憶猜測或音譯**。查證步驟：
-  1. 用 WebSearch 搜尋「{原文書名} 繁體中文 譯名」或「{原文書名} 中文版」
-  2. 確認搜尋結果中有明確的出版品或可靠來源佐證該譯名
-  3. 若 WebSearch 不可用或搜尋後仍無法確認標準譯名，**直接使用原文書名/作者名**，不做任何翻譯
-  4. 延伸閱讀中的其他書籍同理：無法確認譯名時保留原文
-- **使用者已有筆記**：先讀取，以此為基礎補充深化，不重頭分析
-- **渲染失敗**：檢查 JSON 結構是否符合 json-schema.md，修正後重新執行 render-report.py
-
-## 腳本工具
-
-| 腳本 | 用途 | 依賴 |
-|------|------|------|
-| `scripts/extract-text.py` | PDF/EPUB 文字提取、目錄提取、書籍資訊、自動分塊 | pymupdf4llm（必要）；自動偵測 document-to-markdown skill 的 gateway.py，已安裝則優先使用（支援 EPUB 等更多格式） |
-| `scripts/render-report.py` | JSON → HTML 報告渲染 | 僅 Python 標準庫 |
-
-## 參考檔案載入表
-
-| 需求 | 載入檔案 |
-|------|---------|
-| 分析 JSON 結構（每次分析必讀） | [references/json-schema.md](references/json-schema.md) |
-| 分析方法論（結構解析、批判、內化、行動） | [references/analysis.md](references/analysis.md) |
-| HTML 報告設計規範（僅修改模板時需要） | [references/design-spec.md](references/design-spec.md) |
-| 公開電子書來源（書名模式下搜尋書庫時） | [references/ebook-library.md](references/ebook-library.md) |
-
-**載入原則：**
-- json-schema.md 在產出 JSON 前載入（不需讀 render-report.py）
-- analysis.md 在進入分析階段時載入
-- design-spec.md 通常不需載入（render-report.py 直接套用模板）；僅在需要理解或修改 HTML 結構時才載入
+不要一次載入所有參考檔案。主文件負責分流、證據界線、步驟與完成判準；細節只在相應分支使用。
