@@ -9,7 +9,7 @@
 **從可回查來源到可離線保存的深度閱讀報告。**<br />
 *Evidence-aware deep reading, delivered as an offline HTML report.*
 
-[繁體中文](#zh-tw) · [English](#en-us)
+[繁體中文](#zh-tw) · [English](#en-us) · [公開成果](#公開成果瀏覽) · [Public reports](#public-report-gallery)
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-b08d57.svg?style=flat-square)](LICENSE)
 [![Agent Skill](https://img.shields.io/badge/Agent_Skill-compatible-244b3b.svg?style=flat-square)](#安裝)
@@ -70,6 +70,17 @@ npx skills add kcchien/crisp-reading
 - JavaScript 關閉時，正文與來源仍完整可讀。
 - 長 URL 與寬表格不會讓整頁水平溢位；表格需要時局部捲動。
 - Copy 失敗會顯示可手動選取的 Markdown，不會假報成功。
+
+### 公開成果瀏覽
+
+無需安裝即可在瀏覽器中閱讀完整 HTML 報告：
+
+- [大亨小傳（The Great Gatsby）](https://books.kcchien.com/reading-report-the-great-gatsby.html)
+- [老殘遊記](https://books.kcchien.com/lao-can-you-ji.html)
+- [傲慢與偏見（Pride and Prejudice）](https://books.kcchien.com/pride-and-prejudice.html)
+- [納瓦爾寶典（The Almanack of Naval Ravikant）](https://books.kcchien.com/almanack-of-naval.html)
+
+這些公開成果保留產出當時的分析與介面版本，作為 CRISP Reading 的歷來作品集。現行資料契約與 UI 以本 repository 為準。
 
 ### 證據原則
 
@@ -221,6 +232,17 @@ Each report is one self-contained HTML file. It needs no server or external fram
 - The body and sources remain readable when JavaScript is disabled.
 - Long URLs and wide tables do not create page-wide horizontal overflow.
 - If copy fails, the report exposes selectable Markdown instead of reporting false success.
+
+### Public report gallery
+
+Open complete HTML reports in the browser without installing the skill:
+
+- [The Great Gatsby](https://books.kcchien.com/reading-report-the-great-gatsby.html)
+- [The Travels of Lao Can](https://books.kcchien.com/lao-can-you-ji.html)
+- [Pride and Prejudice](https://books.kcchien.com/pride-and-prejudice.html)
+- [The Almanack of Naval Ravikant](https://books.kcchien.com/almanack-of-naval.html)
+
+These public reports preserve the analysis and interface version used when each report was generated. They form the historical CRISP Reading portfolio. This repository defines the current data contract and UI.
 
 ### Evidence contract
 

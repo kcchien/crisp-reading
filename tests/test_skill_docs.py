@@ -55,6 +55,18 @@ class SkillDocumentationTests(unittest.TestCase):
         self.assertIn("連續章節", self.readme)
         self.assertIn("閱讀範圍", self.readme)
 
+    def test_readme_links_cloudflare_report_gallery_in_both_languages(self):
+        report_urls = (
+            "https://books.kcchien.com/reading-report-the-great-gatsby.html",
+            "https://books.kcchien.com/lao-can-you-ji.html",
+            "https://books.kcchien.com/pride-and-prejudice.html",
+            "https://books.kcchien.com/almanack-of-naval.html",
+        )
+        self.assertIn("公開成果瀏覽", self.readme)
+        self.assertIn("Public report gallery", self.readme)
+        for url in report_urls:
+            self.assertEqual(self.readme.count(url), 2)
+
     def test_openai_metadata_is_present_and_not_truncated(self):
         metadata = (PACKAGE_DIR / "agents" / "openai.yaml").read_text(encoding="utf-8")
         match = re.search(r'short_description:\s*"([^"]+)"', metadata)
